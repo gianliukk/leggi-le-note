@@ -37,6 +37,14 @@
     $("#chipXp").innerHTML = '<span style="color:var(--gem);display:inline-flex">' + ICON.gem + "</span><span>" + S.state.xp + "</span>";
   }
 
+  function bonusHint(serie) {
+    var m = S.moltiplicatore(serie), n = S.prossimaSoglia(serie), t;
+    if (!serie) return "";
+    t = m > 1 ? "Bonus continuità attivo: XP ×" + String(m).replace(".", ",") + "." : "";
+    if (n) t += (t ? " " : "") + "Ancora " + n.mancano + (n.mancano === 1 ? " giorno" : " giorni") + " di fila per XP ×" + String(n.molt).replace(".", ",") + ".";
+    return t ? '<p class="bonus-line">' + t + "</p>" : "";
+  }
+
   /* ---------- Percorso ---------- */
   var OFFSETS = [0, 56, 84, 56, 0, -56, -84, -56];
   function renderPercorso() {
@@ -49,7 +57,7 @@
       hero = LN.gufo(primo ? "ciao" : "felice") + '<div class="bubble">' +
         (primo
           ? "<h1>Ciao" + chi + "! Sono il prof. Marano.</h1><p>Ti accompagno tappa dopo tappa a leggere la musica. Si comincia dalle prime tre note.</p>"
-          : "<h1>Ciao di nuovo" + chi + "!</h1><p>Prossima tappa: <strong>" + t.L.title + "</strong>." + (S.oggiFatto() ? " Oggi la serie è già salva." : " Allenati oggi per tenere viva la serie.") + "</p>") +
+          : "<h1>Ciao di nuovo" + chi + "!</h1><p>Prossima tappa: <strong>" + t.L.title + "</strong>." + (S.oggiFatto() ? " Oggi la serie è già salva." : " Allenati oggi per tenere viva la serie.") + "</p>" + bonusHint(S.serieAttuale())) +
         '<button class="btn3d primary" id="heroGo">' + (primo ? "Inizia" : "Continua") + "</button></div>";
     }
     $("#hero").innerHTML = hero;
@@ -250,6 +258,7 @@
       '<div class="tile" style="--tc:var(--ok)"><div class="t-head" style="color:var(--surface)">Precisione</div><div class="t-val">' + pct + "%</div></div>" +
       '<div class="tile" style="--tc:var(--accent)"><div class="t-head" style="color:var(--accent-ink)">Tempo</div><div class="t-val">' + fmtTime(s.ms) + "</div></div></div>" +
       (res.serieSu ? '<p class="sub"><span style="color:var(--flame);display:inline-flex;width:20px;vertical-align:-4px">' + ICON.flame + "</span> <strong>Serie: " + res.serie + (res.serie === 1 ? " giorno" : " giorni di fila") + "</strong></p>" : "") +
+      (res.molt > 1 ? '<p class="bonus-line">Bonus continuità XP ×' + String(res.molt).replace(".", ",") + ": +" + (res.xp - res.base) + " XP extra!</p>" : bonusHint(res.serie)) +
       review +
       '<div class="esito-actions"><button class="btn3d primary" id="goPath">Continua</button><button class="btn-plain" id="retry">Rifai la tappa</button></div></div>';
     var gi = s.gi;
@@ -341,8 +350,8 @@
   });
 
   /* ---------- Navigazione ---------- */
-  var VIEWS = ["accesso", "percorso", "lezioni", "profilo", "docente", "sessione", "esito"];
-  var TABS = ["percorso", "lezioni", "profilo", "docente"];
+  var VIEWS = ["accesso", "percorso", "classe", "lezioni", "profilo", "docente", "sessione", "esito"];
+  var TABS = ["percorso", "classe", "lezioni", "profilo", "docente"];
   function show(v) {
     VIEWS.forEach(function (x) { $("#v-" + x).hidden = x !== v; });
     document.body.classList.toggle("in-sessione", v === "sessione");
@@ -356,6 +365,7 @@
     if (v === "lezioni") renderLesson();
     if (v === "profilo") renderProfilo();
     if (v === "docente") LN.docente.carica();
+    if (v === "classe") LN.classe.carica();
     if (TABS.indexOf(v) > -1) { try { history.replaceState(null, "", "#" + v); } catch (e) {} }
     if (v !== "accesso") updateChips();
     window.scrollTo({ top: 0 });
@@ -365,7 +375,7 @@
   /* ---------- Accesso ---------- */
   function entra() {
     var h = location.hash.slice(1);
-    var ok = ["lezioni", "profilo"].concat(LN.account.ruolo === "docente" ? ["docente"] : []);
+    var ok = ["classe", "lezioni", "profilo"].concat(LN.account.ruolo === "docente" ? ["docente"] : []);
     show(ok.indexOf(h) > -1 ? h : LN.account.ruolo === "docente" ? "docente" : "percorso");
   }
   function mostraAccesso(docente) {

@@ -95,6 +95,13 @@ window.LN = window.LN || {};
         .then(function (r) { if (r.error) console.warn("Registrazione tappa:", r.error.message); });
     },
 
+    /* Progressi riassuntivi di tutti gli studenti (solo nomi utente). */
+    compagni: async function () {
+      var r = await client.rpc("compagni");
+      if (r.error) throw new Error(traduci(r.error));
+      return r.data || [];
+    },
+
     /* ---------- Docente ---------- */
     creaDocente: async function (email, password) {
       var r = await client.auth.signUp({ email: email.trim().toLowerCase(), password: password });

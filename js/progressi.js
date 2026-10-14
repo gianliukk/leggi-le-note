@@ -76,17 +76,31 @@ window.LN = window.LN || {};
         ? { score: esatte, stars: Math.max(stelle, prev.stars), ms: ms }
         : { score: prev.score, stars: Math.max(stelle, prev.stars), ms: prev.ms };
 
-      var xp = esatte + 5 + (esatte === totale ? 5 : 0);
-      S.xp += xp;
-
+      // Prima si aggiorna la serie: il bonus vale già dal giorno in cui si raggiunge la soglia.
       var oggi = giorno(), serieSu = false;
       if (S.ultimoGiorno !== oggi) {
         S.serie = S.ultimoGiorno === ieri() ? S.serie + 1 : 1;
         S.ultimoGiorno = oggi;
         serieSu = true;
       }
+      var base = esatte + 5 + (esatte === totale ? 5 : 0);
+      var molt = this.moltiplicatore(S.serie);
+      var xp = Math.round(base * molt);
+      S.xp += xp;
       salva();
-      return { stelle: stelle, xp: xp, record: migliore, serie: S.serie, serieSu: serieSu, sblocco: this.corrente() > prima };
+      return { stelle: stelle, xp: xp, base: base, molt: molt, record: migliore, serie: S.serie, serieSu: serieSu, sblocco: this.corrente() > prima };
+    },
+
+    /* Bonus continuità: più giorni di fila, più XP per ogni tappa. */
+    SOGLIE: [[14, 2], [7, 1.5], [3, 1.2]],
+    moltiplicatore: function (serie) {
+      for (var i = 0; i < this.SOGLIE.length; i++) if (serie >= this.SOGLIE[i][0]) return this.SOGLIE[i][1];
+      return 1;
+    },
+    /* Prossima soglia da raggiungere: { giorni mancanti, moltiplicatore } oppure null. */
+    prossimaSoglia: function (serie) {
+      var s = this.SOGLIE.slice().reverse().find(function (x) { return serie < x[0]; });
+      return s ? { mancano: s[0] - serie, molt: s[1] } : null;
     },
 
     azzera: function () {
