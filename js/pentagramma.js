@@ -18,7 +18,7 @@ window.LN = window.LN || {};
     var clef = o.clef === undefined ? "treble" : o.clef;
     var bottomD = 30;
     var notes = o.notes || [];
-    var startX = o.startX != null ? o.startX : (clef ? 50 : 18);
+    var startX = o.startX != null ? o.startX : (clef ? 50 : 18) + (o.time ? 24 : 0);
     var gap = o.gap || 30;
     var W = o.width || (startX + notes.length * gap + 12);
     var withLabels = notes.some(function (n) { return n.label != null; });
@@ -27,6 +27,15 @@ window.LN = window.LN || {};
     var s = '<svg class="staff" viewBox="0 ' + (o.crop ? "24 " + W + " 70" : "0 " + W + " " + H) + '" style="width:' + Math.round((o.scale || 1.6) * W) + 'px" role="img" aria-label="' + (o.aria || "Pentagramma") + '">';
     for (var i = 0; i < 5; i++) { var ly = 80 - i * 10; s += '<line class="sl" x1="2" x2="' + (W - 2) + '" y1="' + ly + '" y2="' + ly + '"/>'; }
     if (clef === "treble") s += '<text class="clef" x="6" y="' + (Y(32) + 10) + '" font-size="40">' + TREBLE + "</text>";
+    if (o.time) {
+      var tx = (clef ? 50 : 18) + 9, parts = o.time.split("/");
+      s += '<text class="tsig" x="' + tx + '" y="58" text-anchor="middle">' + parts[0] + '</text><text class="tsig" x="' + tx + '" y="78" text-anchor="middle">' + parts[1] + "</text>";
+    }
+    (o.bars || []).forEach(function (i) {
+      var bx = startX + (i + 1) * gap;
+      s += '<line class="bar" x1="' + bx + '" x2="' + bx + '" y1="40" y2="80"/>';
+    });
+    if (o.fine) s += '<line class="bar" x1="' + (W - 9) + '" x2="' + (W - 9) + '" y1="40" y2="80"/><rect class="bar-fine" x="' + (W - 6) + '" y="40" width="3.5" height="40"/>';
     notes.forEach(function (n, idx) {
       var x = startX + idx * gap + gap / 2, v = n.v == null ? 2 : n.v;
       var d = n.d == null ? 34 : n.d, y = Y(d);
