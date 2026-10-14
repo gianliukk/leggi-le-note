@@ -1,0 +1,353 @@
+/* Applicazione: percorso, tappe, esito, lezioni e profilo. */
+(function (LN) {
+  "use strict";
+  var S = LN.store;
+  function $(s) { return document.querySelector(s); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function fmtTime(ms) { var s = Math.round(ms / 1000); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
+  function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+
+  var ICON = {
+    note: '<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="9" cy="17" rx="5.2" ry="3.7" transform="rotate(-20 9 17)" fill="currentColor"/><rect x="12.7" y="3" width="2.3" height="14" fill="currentColor"/></svg>',
+    valori: '<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="8" cy="18" rx="5" ry="3.6" transform="rotate(-20 8 18)" fill="currentColor"/><rect x="11.4" y="3" width="2.3" height="15" fill="currentColor"/><path d="M13.7 3 C14 6.5 20 7.5 18.6 13 C18 10 16 8.8 13.7 8.6 Z" fill="currentColor"/></svg>',
+    lock: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10.5" rx="2.5" fill="currentColor"/><path d="M8.2 10.5V7.6a3.8 3.8 0 0 1 7.6 0v2.9" fill="none" stroke="currentColor" stroke-width="2.6"/></svg>',
+    flame: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.5 2c.6 3.6 6.5 5.6 6.5 12a7 7 0 0 1-14 0c0-3.2 1.9-5.4 3.3-6.6.1 2 1 3.3 2.3 3.6C10.3 7.6 10.8 4.6 12.5 2z" fill="currentColor"/></svg>',
+    gem: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3h11l4.5 6.2L12 21 2 9.2z" fill="currentColor"/><path d="M2 9.2h20M8.5 9.2 12 21l3.5-11.8" stroke="#FFFFFF" stroke-opacity=".45" stroke-width="1.2" fill="none"/></svg>',
+    book: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg>',
+    check: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor"/><path d="M7 12.4l3.3 3.3L17 9" fill="none" stroke="#FFFFFF" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    star: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.5l1.3-6.6L2.5 9.3l6.6-.8z" fill="currentColor"/></svg>'
+  };
+  function starRow(k, cls) {
+    var s = '<span class="' + cls + '" aria-label="' + k + ' stelle su 3">';
+    for (var i = 1; i <= 3; i++) s += '<span class="' + (i <= k ? "on" : "off") + '" aria-hidden="true">★</span>';
+    return s + "</span>";
+  }
+  var toastT = null;
+  function toast(msg) {
+    var t = $("#toast"); t.textContent = msg; t.hidden = false;
+    clearTimeout(toastT); toastT = setTimeout(function () { t.hidden = true; }, 2600);
+  }
+
+  /* ---------- Barra superiore ---------- */
+  function updateChips() {
+    var c = $("#chipSerie");
+    c.innerHTML = ICON.flame + "<span>" + S.serieAttuale() + "</span>";
+    c.style.color = S.oggiFatto() ? "var(--flame)" : "";
+    c.classList.toggle("spenta", !S.oggiFatto());
+    $("#chipXp").innerHTML = '<span style="color:var(--gem);display:inline-flex">' + ICON.gem + "</span><span>" + S.state.xp + "</span>";
+  }
+
+  /* ---------- Percorso ---------- */
+  var OFFSETS = [0, 56, 84, 56, 0, -56, -84, -56];
+  function renderPercorso() {
+    var cur = S.corrente(), tot = LN.TAPPE.length, hero;
+    if (cur >= tot) {
+      hero = LN.gufo("festa") + '<div class="bubble"><h1>Percorso completato!</h1><p>Hai superato tutte le tappe. Ora puoi tornare indietro e battere i tuoi record.</p></div>';
+    } else {
+      var t = LN.TAPPE[cur], primo = S.state.xp === 0;
+      hero = LN.gufo(primo ? "ciao" : "felice") + '<div class="bubble">' +
+        (primo
+          ? "<h1>Ciao! Sono il prof. Marano.</h1><p>Ti accompagno tappa dopo tappa a leggere la musica. Si comincia dalle prime tre note.</p>"
+          : "<h1>Ciao di nuovo!</h1><p>Prossima tappa: <strong>" + t.L.title + "</strong>." + (S.oggiFatto() ? " Oggi la serie è già salva." : " Allenati oggi per tenere viva la serie.") + "</p>") +
+        '<button class="btn3d primary" id="heroGo">' + (primo ? "Inizia" : "Continua") + "</button></div>";
+    }
+    $("#hero").innerHTML = hero;
+
+    var html = "", gi = 0;
+    LN.PERCORSO.forEach(function (u, ui) {
+      var c = ui % 4;
+      html += '<section class="unit" style="--u:var(--u' + c + ');--us:var(--u' + c + 's)">' +
+        '<div class="unit-banner" style="--u:var(--u' + c + ');--us:var(--u' + c + 's)"><div><div class="eyebrow">Unità ' + (ui + 1) + "</div><h2>" + u.titolo + "</h2><p>" + u.descr + "</p></div>" +
+        '<button class="guide-btn" data-lesson="' + u.lezione + '">' + ICON.book + "Guida</button></div>" +
+        '<div class="nodes">';
+      u.tappe.forEach(function () {
+        var T = LN.TAPPE[gi], b = S.best(T.key), open = S.sbloccata(gi), done = S.completata(T.key), isCur = gi === cur;
+        var cls = "node" + (!open ? " locked" : done ? " done" : "") + (isCur ? " current" : "");
+        var icon = !open ? ICON.lock : ICON[T.track];
+        html += '<div class="node-wrap" style="--x:' + OFFSETS[gi % 8] + 'px">' +
+          (isCur ? '<span class="start-tip">' + (b.score ? "Riprova" : "Inizia") + "</span>" : "") +
+          '<button class="' + cls + '" data-tappa="' + gi + '" aria-label="' + esc(T.L.title) + (open ? "" : ", bloccata") + '">' + icon + "</button>" +
+          (b.stars || done ? starRow(b.stars, "node-stars") : "") +
+          '<span class="node-label">' + T.L.title + "</span></div>";
+        gi++;
+      });
+      html += "</div></section>";
+    });
+    html += '<p class="path-end">Nuove unità in arrivo: ritmo, ascolto e diteggiatura del clarinetto.</p>';
+    $("#path").innerHTML = html;
+    updateChips();
+  }
+  $("#hero").addEventListener("click", function (e) { if (e.target.closest("#heroGo")) startSession(S.corrente()); });
+  $("#path").addEventListener("click", function (e) {
+    var g = e.target.closest("[data-lesson]");
+    if (g) { lessonIdx = +g.dataset.lesson; show("lezioni"); return; }
+    var n = e.target.closest("[data-tappa]");
+    if (!n) return;
+    var i = +n.dataset.tappa;
+    if (!S.sbloccata(i)) { toast("Supera prima la tappa precedente con almeno due stelle."); return; }
+    startSession(i);
+  });
+
+  /* ---------- Sessione ---------- */
+  var sess = null;
+  function startSession(gi) {
+    var T = LN.TAPPE[gi];
+    sess = { gi: gi, T: T, track: T.track, L: T.L, i: 0, ok: 0, misses: {}, ms: 0, qStart: 0, cur: null, locked: false, timer: null };
+    show("sessione");
+    renderAnswers();
+    next();
+  }
+  function same(a, b) { return a && b && a.d === b.d && a.v === b.v && a.rest === b.rest; }
+  function next() {
+    if (!sess) return;
+    clearTimeout(sess.timer);
+    $("#sheet").hidden = true;
+    if (sess.i >= sess.L.q) { finish(); return; }
+    var it, guard = 0;
+    do { it = pick(sess.L.items); guard++; } while (same(it, sess.cur) && guard < 30);
+    if (sess.track === "valori") it = { v: it.v, rest: it.rest, d: it.rest ? 34 : 29 + Math.floor(Math.random() * 9) };
+    sess.cur = it; sess.locked = false;
+    $("#prompt").textContent = sess.track === "note" ? "Come si chiama questa nota?" : it.rest ? "Che pausa è? Quanto vale?" : "Che figura è? Quanto vale?";
+    drawStage("");
+    $("#sessCount").textContent = (sess.i + 1) + "/" + sess.L.q;
+    $("#pFill").style.width = (sess.i / sess.L.q * 100) + "%";
+    document.querySelectorAll(".ans").forEach(function (b) { b.classList.remove("ok", "bad"); });
+    if (pianoMode()) renderPiano();
+    sess.qStart = performance.now();
+  }
+  function drawStage(cls) {
+    var it = sess.cur;
+    $("#stage").innerHTML = LN.staffSVG({ notes: [{ d: it.d, v: it.v, rest: it.rest, cls: cls }], width: 170, startX: 82, gap: 40, play: false, scale: 2.5, aria: "Figura da riconoscere" });
+  }
+  function keysOf() { return sess.track === "note" ? sess.L.letters : sess.L.vs; }
+  function pianoMode() { return sess && sess.track === "note" && S.set.mode === "tastiera"; }
+  function renderAnswers() {
+    var keys = keysOf(), box = $("#answers");
+    box.classList.toggle("values", sess.track === "valori");
+    box.style.setProperty("--cols", sess.track === "note" ? Math.min(keys.length, 4) : Math.min(keys.length, 3));
+    box.innerHTML = keys.map(function (k) {
+      var inner = sess.track === "note" ? LN.nm(k) : LN.VALUES[k].name + "<small>" + LN.VALUES[k].frac + "</small>";
+      return '<button class="ans" data-k="' + k + '" id="ans-' + k + '">' + inner + "</button>";
+    }).join("");
+    var kb = pianoMode();
+    box.hidden = kb;
+    $("#pianoWrap").hidden = !kb;
+    $("#hint").innerHTML = kb ? "Tocca il tasto giusto sulla tastiera." :
+      'Tasti rapidi: <span class="kbd">1</span>–<span class="kbd">' + keys.length + "</span>" +
+      (sess.track === "note" ? ' oppure <span class="kbd">' + keys.map(function (l) { return LN.EN[l]; }).join(" ") + "</span>" : "") +
+      ' · <span class="kbd">Invio</span> per continuare';
+  }
+  function renderPiano() {
+    var lo = sess.L.ds[0] - 1, hi = sess.L.ds[sess.L.ds.length - 1] + 1, N = hi - lo + 1, html = "", d;
+    for (d = lo; d <= hi; d++) {
+      var label = d % 7 === 0 ? (S.set.names === "en" ? "C" : "Do") + (d === 28 ? '<span class="mid">centrale</span>' : "") : "";
+      html += '<button class="wk" data-midi="' + LN.midiOf(d) + '" aria-label="Tasto bianco">' + label + "</button>";
+    }
+    for (d = lo; d < hi; d++) {
+      if ([0, 1, 3, 4, 5].indexOf(d % 7) > -1) html += '<button class="bk" data-midi="' + (LN.midiOf(d) + 1) + '" style="left:' + ((d - lo + 1) / N * 100) + '%" aria-label="Tasto nero"></button>';
+    }
+    var p = $("#piano"); p.style.setProperty("--n", N); p.innerHTML = html;
+  }
+  function describe(it) {
+    if (sess.track === "note") return "È " + LN.nm(it.d) + ".";
+    var V = LN.VALUES[it.v];
+    return (it.rest ? "È una pausa di " + V.name.toLowerCase() : "È una " + V.name.toLowerCase()) + ": vale " + V.frac + ".";
+  }
+  function grade(ok) {
+    var it = sess.cur;
+    sess.locked = true;
+    sess.ms += performance.now() - sess.qStart;
+    sess.i++;
+    $("#pFill").style.width = (sess.i / sess.L.q * 100) + "%";
+    if (sess.track === "note") LN.suono.play(LN.midiOf(it.d), 0.9);
+    else if (!it.rest) LN.suono.play(LN.midiOf(it.d), Math.min(LN.VALUES[it.v].beats * LN.BEAT, 3));
+    if (ok) sess.ok++;
+    else {
+      var key = sess.track === "note" ? "n" + it.d : (it.rest ? "p" : "f") + it.v;
+      sess.misses[key] = (sess.misses[key] || 0) + 1;
+    }
+    drawStage(ok ? "ok" : "bad");
+    var sh = $("#sheet");
+    sh.className = "sheet " + (ok ? "ok" : "bad");
+    $("#sheetOwl").innerHTML = LN.gufo(ok ? "felice" : "incoraggia");
+    $("#sheetTitle").textContent = pick(ok ? LN.FRASI.ok : LN.FRASI.bad);
+    $("#sheetMsg").textContent = describe(it);
+    $("#sheetBtn").className = "btn3d " + (ok ? "go-ok" : "go-bad");
+    sh.hidden = false;
+    if (ok) sess.timer = setTimeout(next, 1100);
+    else $("#sheetBtn").focus();
+  }
+  function answer(k) {
+    if (!sess || sess.locked) return;
+    var it = sess.cur, right = sess.track === "note" ? it.d % 7 : it.v, ok = k === right;
+    var b = $("#ans-" + k); if (b) b.classList.add(ok ? "ok" : "bad");
+    if (!ok) { var c = $("#ans-" + right); if (c) c.classList.add("ok"); }
+    grade(ok);
+  }
+  function answerKey(btn) {
+    if (!sess || sess.locked) return;
+    var target = LN.midiOf(sess.cur.d), ok = +btn.dataset.midi === target;
+    btn.classList.add(ok ? "ok" : "bad");
+    if (!ok) { var r = $('#piano [data-midi="' + target + '"]'); if (r) r.classList.add("ok"); }
+    grade(ok);
+  }
+  $("#answers").addEventListener("click", function (e) { var b = e.target.closest(".ans"); if (b) answer(+b.dataset.k); });
+  $("#piano").addEventListener("click", function (e) { var b = e.target.closest("[data-midi]"); if (b) answerKey(b); });
+  $("#sheetBtn").addEventListener("click", next);
+  document.addEventListener("keydown", function (e) {
+    if (!sess || $("#v-sessione").hidden || e.ctrlKey || e.metaKey || e.altKey || !$("#exitModal").hidden) return;
+    if (e.key === "Enter" && !$("#sheet").hidden) { e.preventDefault(); next(); return; }
+    if (sess.locked || pianoMode()) return;
+    var keys = keysOf(), k = e.key.toLowerCase(), num = parseInt(k, 10);
+    if (num >= 1 && num <= keys.length) { e.preventDefault(); answer(keys[num - 1]); return; }
+    var map = { c: 0, d: 1, e: 2, f: 3, g: 4, a: 5, b: 6 };
+    if (sess.track === "note" && map[k] != null && keys.indexOf(map[k]) > -1) { e.preventDefault(); answer(map[k]); }
+  });
+  $("#exitBtn").addEventListener("click", function () {
+    $("#exitOwl").innerHTML = LN.gufo("incoraggia");
+    $("#exitModal").hidden = false; $("#stayBtn").focus();
+  });
+  $("#stayBtn").addEventListener("click", function () { $("#exitModal").hidden = true; });
+  $("#leaveBtn").addEventListener("click", function () {
+    $("#exitModal").hidden = true;
+    if (sess) clearTimeout(sess.timer);
+    sess = null; $("#sheet").hidden = true;
+    show("percorso");
+  });
+
+  /* ---------- Esito ---------- */
+  function finish() {
+    var s = sess, q = s.L.q;
+    var res = S.registra(s.T.key, s.ok, q, Math.round(s.ms));
+    var pct = Math.round(s.ok / q * 100), passed = res.stelle >= 2;
+    var nextT = LN.TAPPE[s.gi + 1];
+    var title = passed ? (res.sblocco ? "Tappa superata!" : "Ottimo lavoro!") : "Ci sei quasi!";
+    var sub = passed
+      ? (res.sblocco && nextT ? "Si apre la tappa successiva: " + nextT.L.title + "." : res.record ? "Nuovo record personale in questa tappa." : "Un ottimo ripasso.")
+      : "Per superare la tappa servono almeno " + Math.ceil(q * 0.8) + " risposte esatte su " + q + ". Ne hai date " + s.ok + ": riprova, ce la puoi fare.";
+    var review = "", keys = Object.keys(s.misses);
+    if (keys.length) {
+      var list, svg, cap;
+      if (s.track === "note") {
+        list = keys.map(function (k) { return { d: +k.slice(1), n: s.misses[k] }; }).sort(function (a, b) { return a.d - b.d; });
+        svg = LN.staffSVG({ notes: list.map(function (x) { return { d: x.d, label: LN.nm(x.d) }; }), gap: 32 });
+        cap = list.map(function (x) { return LN.nm(x.d) + (x.n > 1 ? " (" + x.n + " errori)" : ""); }).join(" · ") + ". Tocca le note per ascoltarle.";
+      } else {
+        list = keys.map(function (k) { return { rest: k[0] === "p", v: +k.slice(1), n: s.misses[k] }; }).sort(function (a, b) { return a.v - b.v; });
+        svg = LN.staffSVG({ notes: list.map(function (x) { return { v: x.v, rest: x.rest, d: x.rest ? 34 : 32, label: LN.VALUES[x.v].frac }; }), gap: 34 });
+        cap = list.map(function (x) { return (x.rest ? "pausa di " + LN.VALUES[x.v].name.toLowerCase() : LN.VALUES[x.v].name) + " " + LN.VALUES[x.v].frac; }).join(" · ");
+      }
+      review = '<div class="review"><h3>Da ripassare</h3><figure class="fig">' + svg + "<figcaption>" + cap + "</figcaption></figure></div>";
+    }
+    $("#esito").innerHTML = '<div class="esito">' +
+      LN.gufo(passed ? "festa" : res.stelle === 1 ? "pensa" : "incoraggia") +
+      "<h1>" + title + "</h1>" + starRow(res.stelle, "big-stars") +
+      '<p class="sub">' + sub + "</p>" +
+      '<div class="tiles">' +
+      '<div class="tile" style="--tc:var(--gem)"><div class="t-head" style="color:var(--surface)">XP guadagnati</div><div class="t-val"><span style="color:var(--gem);display:inline-flex">' + ICON.gem + "</span>" + res.xp + "</div></div>" +
+      '<div class="tile" style="--tc:var(--ok)"><div class="t-head" style="color:var(--surface)">Precisione</div><div class="t-val">' + pct + "%</div></div>" +
+      '<div class="tile" style="--tc:var(--accent)"><div class="t-head" style="color:var(--accent-ink)">Tempo</div><div class="t-val">' + fmtTime(s.ms) + "</div></div></div>" +
+      (res.serieSu ? '<p class="sub"><span style="color:var(--flame);display:inline-flex;width:20px;vertical-align:-4px">' + ICON.flame + "</span> <strong>Serie: " + res.serie + (res.serie === 1 ? " giorno" : " giorni di fila") + "</strong></p>" : "") +
+      review +
+      '<div class="esito-actions"><button class="btn3d primary" id="goPath">Continua</button><button class="btn-plain" id="retry">Rifai la tappa</button></div></div>';
+    var gi = s.gi;
+    sess = null;
+    show("esito");
+    $("#goPath").addEventListener("click", function () { show("percorso"); scrollToCurrent(); });
+    $("#retry").addEventListener("click", function () { startSession(gi); });
+  }
+  $("#esito").addEventListener("click", function (e) { var g = e.target.closest("g.n[data-midi]"); if (g) LN.suono.play(+g.dataset.midi, +g.dataset.dur || 1); });
+  function scrollToCurrent() {
+    var n = document.querySelector(".node.current");
+    if (n) n.scrollIntoView({ block: "center" });
+  }
+
+  /* ---------- Lezioni ---------- */
+  var lessonIdx = 0, quizMode = false;
+  function renderLesson() {
+    var L = LN.LESSONS[lessonIdx], prev = LN.LESSONS[lessonIdx - 1], nextL = LN.LESSONS[lessonIdx + 1], el = $("#lesson");
+    el.innerHTML = '<div class="lesson-bar"><span class="eyebrow">Lezione ' + (lessonIdx + 1) + " di " + LN.LESSONS.length + "</span>" +
+      (L.quiz === false ? "" : '<label class="check"><input type="checkbox" id="quizToggle"' + (quizMode ? " checked" : "") + "> Nascondi i nomi</label>") + "</div>" +
+      "<h2>" + L.t + "</h2>" + L.body().join("") +
+      '<div class="lesson-nav">' +
+      (prev ? '<button class="btn3d" data-go="' + (lessonIdx - 1) + '">&larr; ' + prev.t + "</button>" : "<span></span>") +
+      '<button class="btn3d primary" data-path="1">Vai al percorso</button>' +
+      (nextL ? '<button class="btn3d" data-go="' + (lessonIdx + 1) + '">' + nextL.t + " &rarr;</button>" : "") + "</div>";
+    el.classList.toggle("quiz", quizMode && L.quiz !== false);
+    $("#toc").innerHTML = LN.LESSONS.map(function (x, i) { return '<li><button data-lesson="' + i + '"' + (i === lessonIdx ? ' aria-current="true"' : "") + ">" + x.t + "</button></li>"; }).join("");
+  }
+  $("#toc").addEventListener("click", function (e) { var b = e.target.closest("[data-lesson]"); if (b) { lessonIdx = +b.dataset.lesson; renderLesson(); window.scrollTo({ top: 0 }); } });
+  $("#lesson").addEventListener("click", function (e) {
+    var go = e.target.closest("[data-go]"); if (go) { lessonIdx = +go.dataset.go; renderLesson(); window.scrollTo({ top: 0 }); return; }
+    if (e.target.closest("[data-path]")) { show("percorso"); return; }
+    var g = e.target.closest("g.n[data-midi]"); if (g) { g.classList.add("revealed"); LN.suono.play(+g.dataset.midi, +g.dataset.dur || 1); }
+  });
+  $("#lesson").addEventListener("keydown", function (e) {
+    var g = e.target.closest && e.target.closest("g.n[data-midi]");
+    if (g && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); g.classList.add("revealed"); LN.suono.play(+g.dataset.midi, +g.dataset.dur || 1); }
+  });
+  $("#lesson").addEventListener("change", function (e) {
+    if (e.target.id !== "quizToggle") return;
+    quizMode = e.target.checked; $("#lesson").classList.toggle("quiz", quizMode);
+    $("#lesson").querySelectorAll(".revealed").forEach(function (g) { g.classList.remove("revealed"); });
+  });
+
+  /* ---------- Profilo ---------- */
+  function seg(name, opts, val) {
+    return '<div class="seg" role="group">' + opts.map(function (o) {
+      return '<button data-set="' + name + '" data-val="' + o[0] + '" aria-pressed="' + (String(val) === String(o[0])) + '">' + o[1] + "</button>";
+    }).join("") + "</div>";
+  }
+  function renderProfilo() {
+    var done = LN.TAPPE.filter(function (t) { return S.completata(t.key); }).length;
+    var stars = LN.TAPPE.reduce(function (a, t) { return a + S.best(t.key).stars; }, 0);
+    $("#profilo").innerHTML =
+      '<div class="profile-head">' + LN.gufo("ciao") + "<div><h1>Profilo ospite</h1><p>Presto entrerai con il nome utente che ti darà il prof. Marano: i tuoi progressi ti seguiranno su ogni dispositivo e potrai creare il tuo avatar.</p></div></div>" +
+      '<div class="ptiles">' +
+      '<div class="ptile"><span style="color:var(--flame)">' + ICON.flame + "</span><b>" + S.serieAttuale() + "</b><span>Giorni di fila</span></div>" +
+      '<div class="ptile"><span style="color:var(--gem)">' + ICON.gem + "</span><b>" + S.state.xp + "</b><span>XP totali</span></div>" +
+      '<div class="ptile"><span style="color:var(--ok)">' + ICON.check + "</span><b>" + done + "/" + LN.TAPPE.length + "</b><span>Tappe superate</span></div>" +
+      '<div class="ptile"><span style="color:var(--accent)">' + ICON.star + "</span><b>" + stars + "/" + LN.TAPPE.length * 3 + "</b><span>Stelle</span></div></div>" +
+      '<div class="settings"><h2>Impostazioni</h2>' +
+      '<div class="set-row"><span class="lbl">Nomi delle note</span>' + seg("names", [["it", "Do Re Mi"], ["en", "C D E"]], S.set.names) + "</div>" +
+      '<div class="set-row"><span class="lbl">Suono del clarinetto</span>' + seg("sound", [["true", "Sì"], ["false", "No"]], S.set.sound) + "</div>" +
+      '<div class="set-row"><span class="lbl">Rispondi alle note con<span class="desc">La tastiera mostra il pianoforte al posto dei pulsanti.</span></span>' + seg("mode", [["nomi", "Nomi"], ["tastiera", "Tastiera"]], S.set.mode) + "</div>" +
+      '<div class="set-row"><span class="lbl">Modalità docente<span class="desc">Sblocca tutte le tappe, per mostrarle in classe.</span></span>' + seg("unlockAll", [["false", "No"], ["true", "Sì"]], S.set.unlockAll) + "</div>" +
+      '<div class="set-row"><span class="lbl">Azzera i progressi<span class="desc">Cancella XP, serie e stelle su questo dispositivo.</span></span><span id="resetBox"><button class="linkish" id="resetBtn">Azzera</button></span></div>' +
+      "</div>";
+  }
+  $("#profilo").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-set]");
+    if (b) {
+      var k = b.dataset.set, v = b.dataset.val;
+      S.set[k] = v === "true" ? true : v === "false" ? false : v;
+      S.salva(); renderProfilo(); return;
+    }
+    if (e.target.closest("#resetBtn")) {
+      $("#resetBox").innerHTML = 'Sicuro? <button class="linkish" id="resetYes">Sì, azzera</button>';
+      return;
+    }
+    if (e.target.closest("#resetYes")) { S.azzera(); renderProfilo(); updateChips(); toast("Progressi azzerati."); }
+  });
+
+  /* ---------- Navigazione ---------- */
+  var VIEWS = ["percorso", "lezioni", "profilo", "sessione", "esito"];
+  function show(v) {
+    VIEWS.forEach(function (x) { $("#v-" + x).hidden = x !== v; });
+    document.body.classList.toggle("in-sessione", v === "sessione");
+    ["percorso", "lezioni", "profilo"].forEach(function (x) {
+      if (x === v) $("#tab-" + x).setAttribute("aria-current", "page"); else $("#tab-" + x).removeAttribute("aria-current");
+    });
+    if (v !== "sessione") $("#sheet").hidden = true;
+    if (v === "percorso") renderPercorso();
+    if (v === "lezioni") renderLesson();
+    if (v === "profilo") renderProfilo();
+    if (["percorso", "lezioni", "profilo"].indexOf(v) > -1) { try { history.replaceState(null, "", "#" + v); } catch (e) {} }
+    updateChips();
+    window.scrollTo({ top: 0 });
+  }
+  document.querySelectorAll(".tab").forEach(function (b) { b.addEventListener("click", function () { show(b.dataset.view); }); });
+
+  var h = location.hash.slice(1);
+  show(["lezioni", "profilo"].indexOf(h) > -1 ? h : "percorso");
+})(window.LN);

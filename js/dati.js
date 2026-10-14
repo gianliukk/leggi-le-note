@@ -1,0 +1,84 @@
+/* Dati del percorso: note, valori, livelli e unità. */
+window.LN = window.LN || {};
+(function (LN) {
+  "use strict";
+
+  LN.IT = ["Do", "Re", "Mi", "Fa", "Sol", "La", "Si"];
+  LN.EN = ["C", "D", "E", "F", "G", "A", "B"];
+  LN.SEMI = [0, 2, 4, 5, 7, 9, 11];
+  LN.BEAT = 0.75; // secondi per una semiminima (80 battiti al minuto)
+
+  LN.range = function (a, b) { var r = []; for (var i = a; i <= b; i++) r.push(i); return r; };
+
+  LN.VALUES = [
+    { name: "Semibreve", frac: "4/4", beats: 4, per: 1 },
+    { name: "Minima", frac: "2/4", beats: 2, per: 2 },
+    { name: "Semiminima", frac: "1/4", beats: 1, per: 4 },
+    { name: "Croma", frac: "1/8", beats: 0.5, per: 8 },
+    { name: "Semicroma", frac: "1/16", beats: 0.25, per: 16 },
+    { name: "Biscroma", frac: "1/32", beats: 0.125, per: 32 }
+  ];
+
+  /* Le note sono indicate come gradi diatonici: 28 = Do centrale, 30 = Mi sulla prima riga. */
+  var r = LN.range;
+  var NOTE_LEVELS = [
+    { title: "Do, Re, Mi", ds: r(28, 30), q: 10 },
+    { title: "Arriva il Fa", ds: r(28, 31), q: 12 },
+    { title: "Arriva il Sol", ds: r(28, 32), q: 14 },
+    { title: "Arriva il La", ds: r(28, 33), q: 16 },
+    { title: "Tutte e sette", ds: r(28, 34), q: 18 },
+    { title: "Fino al Do acuto", ds: r(28, 35), q: 20 },
+    { title: "Fino al Mi acuto", ds: r(28, 37), q: 22 },
+    { title: "Tutto il pentagramma", ds: r(28, 39), q: 24 },
+    { title: "Tagli addizionali", ds: r(26, 40), q: 26 },
+    { title: "Dal La grave al Do acuto", ds: r(26, 42), q: 28 }
+  ];
+  NOTE_LEVELS.forEach(function (L, i) {
+    var prev = i ? NOTE_LEVELS[i - 1].ds : [];
+    L.items = [];
+    L.ds.forEach(function (d) {
+      L.items.push({ d: d });
+      if (i && prev.indexOf(d) < 0) L.items.push({ d: d }); // le note nuove escono più spesso
+    });
+    L.letters = r(0, 6).filter(function (l) { return L.ds.some(function (d) { return d % 7 === l; }); });
+  });
+
+  var VAL_LEVELS = [
+    { title: "Semibreve, minima, semiminima", kind: "nota", vs: [0, 1, 2], q: 8 },
+    { title: "Arriva la croma", kind: "nota", vs: [0, 1, 2, 3], q: 10 },
+    { title: "Semicroma e biscroma", kind: "nota", vs: [0, 1, 2, 3, 4, 5], q: 12 },
+    { title: "Le prime pause", kind: "pausa", vs: [0, 1, 2], q: 12 },
+    { title: "Tutte le pause", kind: "pausa", vs: [0, 1, 2, 3, 4, 5], q: 14 },
+    { title: "Note e pause insieme", kind: "both", vs: [0, 1, 2, 3, 4, 5], q: 16 }
+  ];
+  VAL_LEVELS.forEach(function (L) {
+    L.items = [];
+    L.vs.forEach(function (v) {
+      if (L.kind !== "pausa") L.items.push({ v: v, rest: false });
+      if (L.kind !== "nota") L.items.push({ v: v, rest: true });
+    });
+  });
+
+  LN.TRACKS = {
+    note: { levels: NOTE_LEVELS, label: "Note" },
+    valori: { levels: VAL_LEVELS, label: "Valori" }
+  };
+
+  /* Il percorso: unità in ordine, ognuna con la sua lezione di guida e le sue tappe. */
+  LN.PERCORSO = [
+    { titolo: "Le prime note", descr: "Do, Re, Mi e poi il Fa", lezione: 2, tappe: [["note", 1], ["note", 2]] },
+    { titolo: "Quanto dura una nota", descr: "Semibreve, minima, semiminima, croma", lezione: 6, tappe: [["valori", 1], ["valori", 2]] },
+    { titolo: "La scala", descr: "Sol, La, Si: tutte e sette le note", lezione: 3, tappe: [["note", 3], ["note", 4], ["note", 5]] },
+    { titolo: "Figure veloci", descr: "Semicroma e biscroma", lezione: 6, tappe: [["valori", 3]] },
+    { titolo: "Verso l'acuto", descr: "Dal Do al Mi acuto", lezione: 4, tappe: [["note", 6], ["note", 7]] },
+    { titolo: "Il silenzio conta", descr: "Le pause", lezione: 7, tappe: [["valori", 4], ["valori", 5]] },
+    { titolo: "Tutto il pentagramma", descr: "Righe, spazi, note e pause", lezione: 4, tappe: [["note", 8], ["valori", 6]] },
+    { titolo: "Oltre il pentagramma", descr: "I tagli addizionali", lezione: 5, tappe: [["note", 9], ["note", 10]] }
+  ];
+  LN.TAPPE = [];
+  LN.PERCORSO.forEach(function (u, ui) {
+    u.tappe.forEach(function (t) {
+      LN.TAPPE.push({ unit: ui, track: t[0], level: t[1], key: t[0] + "-" + t[1], L: LN.TRACKS[t[0]].levels[t[1] - 1] });
+    });
+  });
+})(window.LN);

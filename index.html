@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Leggi le note</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Noto+Music&display=swap">
+<link rel="stylesheet" href="css/stile.css">
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">&#x1D11E;</span><span>Leggi le note</span></div>
+    <nav class="tabs" aria-label="Sezioni">
+      <button class="tab" id="tab-percorso" data-view="percorso">Percorso</button>
+      <button class="tab" id="tab-lezioni" data-view="lezioni">Lezioni</button>
+      <button class="tab" id="tab-profilo" data-view="profilo">Profilo</button>
+    </nav>
+    <div class="stats-top">
+      <span class="stat-chip" id="chipSerie" title="Giorni di fila con almeno un allenamento"></span>
+      <span class="stat-chip" id="chipXp" title="Punti esperienza"></span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="view" id="v-percorso" hidden>
+    <div class="col">
+      <div class="hero" id="hero"></div>
+      <div id="path"></div>
+    </div>
+  </section>
+
+  <section class="view" id="v-lezioni" hidden>
+    <div class="wide">
+      <div class="lessons">
+        <nav class="toc" aria-label="Elenco lezioni">
+          <div class="eyebrow">Lezioni</div>
+          <ol id="toc"></ol>
+        </nav>
+        <article class="lesson" id="lesson"></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="v-profilo" hidden>
+    <div class="col" id="profilo"></div>
+  </section>
+
+  <section class="view" id="v-sessione" hidden>
+    <div class="sess">
+      <div class="sess-top">
+        <button class="icon-btn" id="exitBtn" aria-label="Esci dalla tappa">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+        </button>
+        <div class="pbar" aria-hidden="true"><i id="pFill"></i></div>
+        <span class="sess-count" id="sessCount">1/10</span>
+      </div>
+      <div class="sess-body">
+        <h2 class="prompt" id="prompt">Come si chiama questa nota?</h2>
+        <div class="stage" id="stage"></div>
+        <div class="answers" id="answers"></div>
+        <div class="piano-wrap" id="pianoWrap" hidden><div class="piano" id="piano"></div></div>
+        <p class="hint" id="hint"></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="v-esito" hidden>
+    <div class="col" id="esito"></div>
+  </section>
+</main>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet-in">
+    <div class="sheet-owl" id="sheetOwl"></div>
+    <div class="sheet-text">
+      <strong id="sheetTitle"></strong>
+      <span id="sheetMsg"></span>
+    </div>
+    <button class="btn3d" id="sheetBtn">Continua</button>
+  </div>
+</div>
+
+<div class="modal" id="exitModal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="exitTitle">
+    <div id="exitOwl"></div>
+    <h3 id="exitTitle">Vuoi davvero uscire?</h3>
+    <p>Se esci adesso, questa tappa non verrà conteggiata.</p>
+    <div class="modal-actions">
+      <button class="btn3d primary" id="stayBtn">Continua a giocare</button>
+      <button class="btn-plain" id="leaveBtn">Esci</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="js/dati.js"></script>
+<script src="js/progressi.js"></script>
+<script src="js/suono.js"></script>
+<script src="js/pentagramma.js"></script>
+<script src="js/gufo.js"></script>
+<script src="js/lezioni.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
