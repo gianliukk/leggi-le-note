@@ -117,17 +117,10 @@ window.LN = window.LN || {};
       });
     },
 
-    /* Crea l'account di uno studente senza far uscire il docente:
-       la registrazione passa da un secondo collegamento che non salva la sessione. */
+    /* Crea l'account di uno studente direttamente nel database (funzione riservata al docente). */
     creaStudente: async function (username, classeId, password) {
-      var tmp = window.supabase.createClient(C.url, C.chiave, {
-        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: "ln-tmp-" + username }
-      });
-      var r = await tmp.auth.signUp({ email: emailDa(username), password: password });
+      var r = await client.rpc("crea_studente", { p_username: username, p_classe_id: classeId, p_password: password });
       if (r.error) throw new Error(traduci(r.error));
-      if (!r.data.user || (r.data.user.identities && r.data.user.identities.length === 0)) throw new Error("Esiste già un account con questo nome.");
-      var ins = await client.from("studenti").insert({ user_id: r.data.user.id, username: username, classe_id: classeId });
-      if (ins.error) throw new Error(traduci(ins.error));
     },
 
     nuovaPassword: async function (username, password) {
