@@ -85,10 +85,43 @@ window.LN = window.LN || {};
       }
       var base = esatte + 5 + (esatte === totale ? 5 : 0);
       var molt = this.moltiplicatore(S.serie);
-      var xp = Math.round(base * molt);
+      var carica = this.consumaEnergia();
+      var xp = carica ? Math.round(base * molt) : 0;
       S.xp += xp;
       salva();
-      return { stelle: stelle, xp: xp, base: base, molt: molt, record: migliore, serie: S.serie, serieSu: serieSu, sblocco: this.corrente() > prima };
+      return { stelle: stelle, xp: xp, base: base, molt: molt, senzaEnergia: !carica, record: migliore, serie: S.serie, serieSu: serieSu, sblocco: this.corrente() > prima };
+    },
+
+    /* Energia: 5 cariche, una per tappa; se ne ricarica una ogni 30 minuti.
+       A energia finita si gioca ancora, ma la tappa non dà XP. */
+    ENERGIA_MAX: 5,
+    RICARICA_MS: 30 * 60 * 1000,
+    illimitata: false,
+    _energia: function () {
+      var now = Date.now(), e = S.energia;
+      if (!e || typeof e.valore !== "number") e = S.energia = { valore: this.ENERGIA_MAX, agg: now };
+      if (e.valore < this.ENERGIA_MAX) {
+        var gained = Math.floor((now - e.agg) / this.RICARICA_MS);
+        if (gained > 0) {
+          e.valore = Math.min(this.ENERGIA_MAX, e.valore + gained);
+          e.agg = e.valore >= this.ENERGIA_MAX ? now : e.agg + gained * this.RICARICA_MS;
+        }
+      } else e.agg = now;
+      return e;
+    },
+    /* { valore, max, prossima: millisecondi alla prossima carica oppure null se piena } */
+    energia: function () {
+      if (this.illimitata) return { valore: this.ENERGIA_MAX, max: this.ENERGIA_MAX, prossima: null, illimitata: true };
+      var e = this._energia();
+      return { valore: e.valore, max: this.ENERGIA_MAX, prossima: e.valore >= this.ENERGIA_MAX ? null : Math.max(0, e.agg + this.RICARICA_MS - Date.now()) };
+    },
+    consumaEnergia: function () {
+      if (this.illimitata) return true;
+      var e = this._energia();
+      if (e.valore <= 0) return false;
+      if (e.valore >= this.ENERGIA_MAX) e.agg = Date.now();
+      e.valore -= 1;
+      return true;
     },
 
     /* Bonus continuità: più giorni di fila, più XP per ogni tappa. */

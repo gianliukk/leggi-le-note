@@ -60,6 +60,7 @@ window.LN = window.LN || {};
         this.ruolo = "docente";
         this.profilo = { username: "Docente", classe: "" };
         LN.store.attach("leggi-le-note-docente", null);
+        LN.store.illimitata = true;
         return;
       }
       var s = await client.from("studenti").select("username, avatar, classi(nome)").eq("user_id", user.id).maybeSingle();
@@ -142,6 +143,23 @@ window.LN = window.LN || {};
       var map = {};
       (r.data || []).forEach(function (c) { map[c.username] = { password: c.password, aggiornata: c.aggiornata }; });
       return map;
+    },
+
+    cambiaClasse: async function (username, classe) {
+      var r = await client.rpc("cambia_classe", { p_username: username, p_classe: classe });
+      if (r.error) throw new Error(traduci(r.error));
+    },
+
+    passaggioAnno: async function () {
+      var r = await client.rpc("passaggio_anno");
+      if (r.error) throw new Error(traduci(r.error));
+      return r.data;
+    },
+
+    nuovaClasse: async function (nome) {
+      var r = await client.from("classi").insert({ nome: nome }).select("id, nome").single();
+      if (r.error) throw new Error(traduci(r.error));
+      return r.data;
     },
 
     eliminaStudente: async function (username) {

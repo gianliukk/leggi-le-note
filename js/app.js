@@ -15,6 +15,7 @@
     gem: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3h11l4.5 6.2L12 21 2 9.2z" fill="currentColor"/><path d="M2 9.2h20M8.5 9.2 12 21l3.5-11.8" stroke="#FFFFFF" stroke-opacity=".45" stroke-width="1.2" fill="none"/></svg>',
     book: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg>',
     check: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor"/><path d="M7 12.4l3.3 3.3L17 9" fill="none" stroke="#FFFFFF" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    bolt: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 2 4.5 13.5h6L9.5 22l9-11.5h-6z" fill="currentColor"/></svg>',
     star: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.5l1.3-6.6L2.5 9.3l6.6-.8z" fill="currentColor"/></svg>'
   };
   function starRow(k, cls) {
@@ -35,7 +36,19 @@
     c.style.color = S.oggiFatto() ? "var(--flame)" : "";
     c.classList.toggle("spenta", !S.oggiFatto());
     $("#chipXp").innerHTML = '<span style="color:var(--gem);display:inline-flex">' + ICON.gem + "</span><span>" + S.state.xp + "</span>";
+    var e = S.energia(), ce = $("#chipEnergia");
+    ce.hidden = !!e.illimitata;
+    ce.innerHTML = '<span style="color:var(--energy);display:inline-flex">' + ICON.bolt + "</span><span>" + e.valore + "/" + e.max + "</span>";
+    ce.classList.toggle("spenta", e.valore === 0);
+    ce.title = e.prossima == null ? "Energia piena: ogni tappa ne usa una" : "Energia: la prossima carica arriva tra " + minuti(e.prossima);
   }
+  function minuti(ms) { var m = Math.max(1, Math.ceil(ms / 60000)); return m + (m === 1 ? " minuto" : " minuti"); }
+  function energiaHint() {
+    var e = S.energia();
+    if (e.illimitata || e.valore > 0) return "";
+    return '<p class="energy-line">Energia finita: puoi allenarti lo stesso, ma le tappe non danno XP. La prossima carica arriva tra ' + minuti(e.prossima) + ".</p>";
+  }
+  setInterval(function () { if (!document.body.classList.contains("no-auth")) updateChips(); }, 30000);
 
   function bonusHint(serie) {
     var m = S.moltiplicatore(serie), n = S.prossimaSoglia(serie), t;
@@ -57,7 +70,7 @@
       hero = LN.gufo(primo ? "ciao" : "felice") + '<div class="bubble">' +
         (primo
           ? "<h1>Ciao" + chi + "! Sono il prof. Marano.</h1><p>Ti accompagno tappa dopo tappa a leggere la musica. Si comincia dalle prime tre note.</p>"
-          : "<h1>Ciao di nuovo" + chi + "!</h1><p>Prossima tappa: <strong>" + t.L.title + "</strong>." + (S.oggiFatto() ? " Oggi la serie è già salva." : " Allenati oggi per tenere viva la serie.") + "</p>" + bonusHint(S.serieAttuale())) +
+          : "<h1>Ciao di nuovo" + chi + "!</h1><p>Prossima tappa: <strong>" + t.L.title + "</strong>." + (S.oggiFatto() ? " Oggi la serie è già salva." : " Allenati oggi per tenere viva la serie.") + "</p>" + bonusHint(S.serieAttuale()) + energiaHint()) +
         '<button class="btn3d primary" id="heroGo">' + (primo ? "Inizia" : "Continua") + "</button></div>";
     }
     $("#hero").innerHTML = hero;
@@ -100,7 +113,8 @@
   /* ---------- Sessione ---------- */
   var sess = null;
   function startSession(gi) {
-    var T = LN.TAPPE[gi];
+    var T = LN.TAPPE[gi], en = S.energia();
+    if (!en.illimitata && en.valore === 0) toast("Energia finita: questa tappa non darà XP. Si ricarica tra " + minuti(en.prossima) + ".");
     sess = { gi: gi, T: T, track: T.track, L: T.L, i: 0, ok: 0, misses: {}, ms: 0, qStart: 0, cur: null, locked: false, timer: null };
     show("sessione");
     renderAnswers();
@@ -258,7 +272,8 @@
       '<div class="tile" style="--tc:var(--ok)"><div class="t-head" style="color:var(--surface)">Precisione</div><div class="t-val">' + pct + "%</div></div>" +
       '<div class="tile" style="--tc:var(--accent)"><div class="t-head" style="color:var(--accent-ink)">Tempo</div><div class="t-val">' + fmtTime(s.ms) + "</div></div></div>" +
       (res.serieSu ? '<p class="sub"><span style="color:var(--flame);display:inline-flex;width:20px;vertical-align:-4px">' + ICON.flame + "</span> <strong>Serie: " + res.serie + (res.serie === 1 ? " giorno" : " giorni di fila") + "</strong></p>" : "") +
-      (res.molt > 1 ? '<p class="bonus-line">Bonus continuità XP ×' + String(res.molt).replace(".", ",") + ": +" + (res.xp - res.base) + " XP extra!</p>" : bonusHint(res.serie)) +
+      (res.senzaEnergia ? '<p class="energy-line">Energia finita: la tappa vale per stelle e serie, ma non per gli XP. La prossima carica arriva tra ' + minuti(S.energia().prossima) + ".</p>" :
+       res.molt > 1 ? '<p class="bonus-line">Bonus continuità XP ×' + String(res.molt).replace(".", ",") + ": +" + (res.xp - res.base) + " XP extra!</p>" : bonusHint(res.serie)) +
       review +
       '<div class="esito-actions"><button class="btn3d primary" id="goPath">Continua</button><button class="btn-plain" id="retry">Rifai la tappa</button></div></div>';
     var gi = s.gi;

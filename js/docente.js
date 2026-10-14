@@ -46,7 +46,9 @@ window.LN = window.LN || {};
     var del = armato === s.username
       ? '<button class="act danger" data-del="' + u + '">Conferma eliminazione</button><button class="act" data-undel="1">Annulla</button>'
       : '<button class="act danger-soft" data-arm="' + u + '">Elimina</button>';
-    var html = "<tr" + (editing === s.username ? ' class="editing"' : "") + '><td class="who">' + u + "</td><td>" + esc(nomeClasse(s.classe_id)) + "</td>" +
+    var sel = '<select class="field cls-sel" data-classe="' + u + '" aria-label="Classe di ' + u + '">' +
+      classi.map(function (k) { return '<option value="' + esc(k.nome) + '"' + (k.id === s.classe_id ? " selected" : "") + ">" + esc(k.nome) + "</option>"; }).join("") + "</select>";
+    var html = "<tr" + (editing === s.username ? ' class="editing"' : "") + '><td class="who">' + u + "</td><td>" + sel + "</td>" +
       '<td class="num">' + (p.xp || 0) + '</td><td class="num">' + tappeSuperate(p) + "/" + LN.TAPPE.length + "</td>" +
       '<td class="num">' + (p.serie || 0) + '</td><td class="num">' + data(p.aggiornato) + "</td>" +
       "<td>" + pw + "</td>" +
@@ -96,7 +98,12 @@ window.LN = window.LN || {};
       '<p class="muted">Scrivi uno studente per riga: nome utente, punto e virgola, classe. Esempio: <code>lucia.l;1AL</code>. Usa solo minuscole, numeri e punti, senza cognomi completi. Per scegliere tu la password aggiungi un altro punto e virgola: <code>lucia.l;1AL;flauto123</code>.</p>' +
       '<textarea class="field" id="dNuovi" rows="6" placeholder="lucia.l;1AL"></textarea>' +
       '<div class="btn-row"><button class="btn3d primary" id="dCrea">Crea account</button><span class="muted" id="dStato" role="status"></span></div>' +
-      '<div id="dEsito"></div></div></div>';
+      '<div id="dEsito"></div></div></div>' +
+
+      '<div class="card"><div class="card-head"><h2>Nuovo anno scolastico</h2></div><div class="pad grid-gap">' +
+      '<p class="muted">A settembre sposta tutti gli studenti nella classe successiva: 1AF diventa 2AF, 2BF diventa 3BF. Chi era in terza passa tra gli «Ex studenti»: conserva account e progressi, ma esce dalla lega e dalla sezione Classe. Le classi nuove vengono create in automatico. Per un singolo studente usa invece il menu Classe nella tabella.</p>' +
+      '<div class="btn-row"><button class="btn3d' + (armato === "*anno" ? " go-bad" : "") + '" id="dAnno">' + (armato === "*anno" ? "Confermi il passaggio d'anno per tutti?" : "Passaggio d'anno") + "</button>" +
+      (armato === "*anno" ? '<button class="btn-plain" data-undel="1">Annulla</button>' : "") + "</div></div></div>";
     renderEsito();
   }
 
@@ -116,10 +123,13 @@ window.LN = window.LN || {};
       var parti = righe[i].split(/[;,\t]/).map(function (x) { return x.trim(); });
       var username = (parti[0] || "").toLowerCase(), cl = (parti[1] || "").toUpperCase(), pw = parti[2] || A.generaPassword();
       var classe = classi.find(function (c) { return c.nome.toUpperCase() === cl; });
+      if (!classe && /^[1-3][A-Z]{1,3}$/.test(cl)) {
+        try { classe = await A.nuovaClasse(cl); classi.push(classe); } catch (e) {}
+      }
       var voce = { username: username, classe: cl, ok: false, errore: "" };
       $("#dStato").textContent = "Creo " + (i + 1) + " di " + righe.length + "…";
       if (!/^[a-z0-9._-]{3,30}$/.test(username)) voce.errore = "Nome utente non valido (3-30 caratteri: minuscole, numeri, punto).";
-      else if (!classe) voce.errore = "Classe «" + cl + "» non trovata.";
+      else if (!classe) voce.errore = "Classe «" + cl + "» non valida: usa il formato 1AF, 2BF, 3AL.";
       else if (pw.length < 6) voce.errore = "La password deve avere almeno 6 caratteri.";
       else {
         try { await A.creaStudente(username, classe.id, pw); voce.ok = true; }
@@ -174,8 +184,20 @@ window.LN = window.LN || {};
     } else fallback();
   }
 
-  document.addEventListener("change", function (e) {
-    if (e.target.id === "dClasse") { filtro = e.target.value; editing = null; armato = null; render(); }
+  document.addEventListener("change", async function (e) {
+    if (e.target.id === "dClasse") { filtro = e.target.value; editing = null; armato = null; render(); return; }
+    var sel = e.target.closest && e.target.closest("[data-classe]");
+    if (sel) {
+      var u = sel.dataset.classe, nuova = sel.value;
+      sel.disabled = true;
+      try {
+        await A.cambiaClasse(u, nuova);
+        var k = classi.find(function (x) { return x.nome === nuova; }), st = studenti.find(function (x) { return x.username === u; });
+        if (k && st) st.classe_id = k.id;
+        toast(u + " ora è in " + nuova + ".");
+      } catch (err) { toast(err.message); }
+      render();
+    }
   });
   document.addEventListener("click", async function (e) {
     if (!$("#v-docente") || $("#v-docente").hidden) return;
@@ -184,6 +206,13 @@ window.LN = window.LN || {};
     if (t.closest("#dMostra")) { mostra = !mostra; render(); return; }
     if (t.closest("#dStampaTutti")) { stampa(conPassword(visibili())); return; }
     if (t.closest("#dCopiaTutti")) { var l = conPassword(visibili()); copia(l.map(messaggio).join("\n\n"), l.length); return; }
+    if (t.closest("#dAnno")) {
+      if (armato !== "*anno") { armato = "*anno"; render(); return; }
+      t.closest("#dAnno").disabled = true;
+      try { var n = await A.passaggioAnno(); armato = null; await carica(); toast("Passaggio d'anno fatto: " + n + " studenti spostati."); }
+      catch (err) { armato = null; render(); toast(err.message); }
+      return;
+    }
     if (t.closest("#dRigenera")) {
       if (armato !== "*rigenera") { armato = "*rigenera"; render(); return; }
       rigeneraMancanti(); return;
