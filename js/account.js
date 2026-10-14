@@ -133,6 +133,20 @@ window.LN = window.LN || {};
     nuovaPassword: async function (username, password) {
       var r = await client.rpc("reimposta_password", { p_username: username, p_password: password });
       if (r.error) throw new Error(traduci(r.error));
+    },
+
+    /* Copia leggibile delle password (solo docente): { username: {password, aggiornata} } */
+    credenziali: async function () {
+      var r = await client.rpc("elenco_credenziali");
+      if (r.error) throw new Error(traduci(r.error));
+      var map = {};
+      (r.data || []).forEach(function (c) { map[c.username] = { password: c.password, aggiornata: c.aggiornata }; });
+      return map;
+    },
+
+    eliminaStudente: async function (username) {
+      var r = await client.rpc("elimina_studente", { p_username: username });
+      if (r.error) throw new Error(traduci(r.error));
     }
   };
 

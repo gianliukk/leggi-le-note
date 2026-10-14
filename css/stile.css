@@ -393,3 +393,22 @@ body.no-auth .tabs { display: none; }
 .comp-bar { height: 8px; background: var(--soft); border-radius: 999px; overflow: hidden; }
 .comp-bar i { display: block; height: 100%; background: var(--ok); border-radius: inherit; }
 @media (max-width: 460px) { .soglie { gap: 6px; } .soglia { padding: 8px 4px; } }
+
+/* ---------- Area docente: password ed eliminazione ---------- */
+.tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.tools .btn3d, .bulk .btn3d { font-size: 0.78rem; padding: 7px 12px; }
+.bulk { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.pad-x { padding: 8px 16px 0; }
+.acts { white-space: nowrap; }
+.act { background: none; border: 1.5px solid var(--line); border-radius: 8px; padding: 3px 8px; margin: 2px 4px 2px 0; font-size: 0.8rem; font-weight: 700; color: var(--ink); }
+.act:hover { border-color: var(--ink); }
+.act.danger-soft { color: var(--bad); }
+.act.danger { background: var(--bad); border-color: var(--bad); color: #FFFFFF; }
+.masked { letter-spacing: 0.15em; color: var(--muted); }
+.board tr.editing td { background: var(--soft); border-bottom: 0; }
+.edit-row td { background: var(--soft); }
+.pw-edit { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+.pw-edit .fld { flex: 1 1 220px; }
+.pw-edit .field { font-family: ui-monospace, Consolas, monospace; }
+.pw-edit p { flex-basis: 100%; }
+.bulk .btn3d:disabled { opacity: 0.5; cursor: not-allowed; }
