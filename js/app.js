@@ -45,10 +45,11 @@
       hero = LN.gufo("festa") + '<div class="bubble"><h1>Percorso completato!</h1><p>Hai superato tutte le tappe. Ora puoi tornare indietro e battere i tuoi record.</p></div>';
     } else {
       var t = LN.TAPPE[cur], primo = S.state.xp === 0;
+      var chi = LN.account.ruolo === "studente" ? ", " + esc(LN.account.profilo.username) : "";
       hero = LN.gufo(primo ? "ciao" : "felice") + '<div class="bubble">' +
         (primo
-          ? "<h1>Ciao! Sono il prof. Marano.</h1><p>Ti accompagno tappa dopo tappa a leggere la musica. Si comincia dalle prime tre note.</p>"
-          : "<h1>Ciao di nuovo!</h1><p>Prossima tappa: <strong>" + t.L.title + "</strong>." + (S.oggiFatto() ? " Oggi la serie è già salva." : " Allenati oggi per tenere viva la serie.") + "</p>") +
+          ? "<h1>Ciao" + chi + "! Sono il prof. Marano.</h1><p>Ti accompagno tappa dopo tappa a leggere la musica. Si comincia dalle prime tre note.</p>"
+          : "<h1>Ciao di nuovo" + chi + "!</h1><p>Prossima tappa: <strong>" + t.L.title + "</strong>." + (S.oggiFatto() ? " Oggi la serie è già salva." : " Allenati oggi per tenere viva la serie.") + "</p>") +
         '<button class="btn3d primary" id="heroGo">' + (primo ? "Inizia" : "Continua") + "</button></div>";
     }
     $("#hero").innerHTML = hero;
@@ -219,6 +220,7 @@
   function finish() {
     var s = sess, q = s.L.q;
     var res = S.registra(s.T.key, s.ok, q, Math.round(s.ms));
+    LN.account.registraSessione(s.T.key, s.ok, q, s.ms, res.xp);
     var pct = Math.round(s.ok / q * 100), passed = res.stelle >= 2;
     var nextT = LN.TAPPE[s.gi + 1];
     var title = passed ? (res.sblocco ? "Tappa superata!" : "Ottimo lavoro!") : "Ci sei quasi!";
@@ -301,8 +303,13 @@
   function renderProfilo() {
     var done = LN.TAPPE.filter(function (t) { return S.completata(t.key); }).length;
     var stars = LN.TAPPE.reduce(function (a, t) { return a + S.best(t.key).stars; }, 0);
+    var acc = LN.account, doc = acc.ruolo === "docente";
+    var nome = doc ? "Prof. Marano" : esc(acc.profilo ? acc.profilo.username : "Ospite");
+    var info = doc
+      ? "Qui giochi in prova: i tuoi risultati restano su questo dispositivo e non entrano nelle classifiche. Gli studenti li segui dalla sezione Docente."
+      : "Classe " + esc(acc.profilo && acc.profilo.classe || "–") + ". I tuoi progressi sono salvati online: ti seguono su ogni computer, tablet o telefono.";
     $("#profilo").innerHTML =
-      '<div class="profile-head">' + LN.gufo("ciao") + "<div><h1>Profilo ospite</h1><p>Presto entrerai con il nome utente che ti darà il prof. Marano: i tuoi progressi ti seguiranno su ogni dispositivo e potrai creare il tuo avatar.</p></div></div>" +
+      '<div class="profile-head">' + LN.gufo("ciao") + "<div><h1>" + nome + "</h1><p>" + info + '</p><button class="btn3d" id="logoutBtn">Esci</button></div></div>' +
       '<div class="ptiles">' +
       '<div class="ptile"><span style="color:var(--flame)">' + ICON.flame + "</span><b>" + S.serieAttuale() + "</b><span>Giorni di fila</span></div>" +
       '<div class="ptile"><span style="color:var(--gem)">' + ICON.gem + "</span><b>" + S.state.xp + "</b><span>XP totali</span></div>" +
@@ -312,11 +319,14 @@
       '<div class="set-row"><span class="lbl">Nomi delle note</span>' + seg("names", [["it", "Do Re Mi"], ["en", "C D E"]], S.set.names) + "</div>" +
       '<div class="set-row"><span class="lbl">Suono del clarinetto</span>' + seg("sound", [["true", "Sì"], ["false", "No"]], S.set.sound) + "</div>" +
       '<div class="set-row"><span class="lbl">Rispondi alle note con<span class="desc">La tastiera mostra il pianoforte al posto dei pulsanti.</span></span>' + seg("mode", [["nomi", "Nomi"], ["tastiera", "Tastiera"]], S.set.mode) + "</div>" +
-      '<div class="set-row"><span class="lbl">Modalità docente<span class="desc">Sblocca tutte le tappe, per mostrarle in classe.</span></span>' + seg("unlockAll", [["false", "No"], ["true", "Sì"]], S.set.unlockAll) + "</div>" +
-      '<div class="set-row"><span class="lbl">Azzera i progressi<span class="desc">Cancella XP, serie e stelle su questo dispositivo.</span></span><span id="resetBox"><button class="linkish" id="resetBtn">Azzera</button></span></div>' +
+      (doc
+        ? '<div class="set-row"><span class="lbl">Sblocca tutte le tappe<span class="desc">Per mostrarle in classe alla LIM.</span></span>' + seg("unlockAll", [["false", "No"], ["true", "Sì"]], S.set.unlockAll) + "</div>" +
+          '<div class="set-row"><span class="lbl">Azzera le tue prove<span class="desc">Cancella XP, serie e stelle del profilo docente.</span></span><span id="resetBox"><button class="linkish" id="resetBtn">Azzera</button></span></div>'
+        : "") +
       "</div>";
   }
   $("#profilo").addEventListener("click", function (e) {
+    if (e.target.closest("#logoutBtn")) { e.target.closest("#logoutBtn").disabled = true; LN.account.esci(); return; }
     var b = e.target.closest("[data-set]");
     if (b) {
       var k = b.dataset.set, v = b.dataset.val;
@@ -331,23 +341,76 @@
   });
 
   /* ---------- Navigazione ---------- */
-  var VIEWS = ["percorso", "lezioni", "profilo", "sessione", "esito"];
+  var VIEWS = ["accesso", "percorso", "lezioni", "profilo", "docente", "sessione", "esito"];
+  var TABS = ["percorso", "lezioni", "profilo", "docente"];
   function show(v) {
     VIEWS.forEach(function (x) { $("#v-" + x).hidden = x !== v; });
     document.body.classList.toggle("in-sessione", v === "sessione");
-    ["percorso", "lezioni", "profilo"].forEach(function (x) {
+    document.body.classList.toggle("no-auth", v === "accesso");
+    $("#tab-docente").hidden = LN.account.ruolo !== "docente";
+    TABS.forEach(function (x) {
       if (x === v) $("#tab-" + x).setAttribute("aria-current", "page"); else $("#tab-" + x).removeAttribute("aria-current");
     });
     if (v !== "sessione") $("#sheet").hidden = true;
     if (v === "percorso") renderPercorso();
     if (v === "lezioni") renderLesson();
     if (v === "profilo") renderProfilo();
-    if (["percorso", "lezioni", "profilo"].indexOf(v) > -1) { try { history.replaceState(null, "", "#" + v); } catch (e) {} }
-    updateChips();
+    if (v === "docente") LN.docente.carica();
+    if (TABS.indexOf(v) > -1) { try { history.replaceState(null, "", "#" + v); } catch (e) {} }
+    if (v !== "accesso") updateChips();
     window.scrollTo({ top: 0 });
   }
   document.querySelectorAll(".tab").forEach(function (b) { b.addEventListener("click", function () { show(b.dataset.view); }); });
 
-  var h = location.hash.slice(1);
-  show(["lezioni", "profilo"].indexOf(h) > -1 ? h : "percorso");
+  /* ---------- Accesso ---------- */
+  function entra() {
+    var h = location.hash.slice(1);
+    var ok = ["lezioni", "profilo"].concat(LN.account.ruolo === "docente" ? ["docente"] : []);
+    show(ok.indexOf(h) > -1 ? h : LN.account.ruolo === "docente" ? "docente" : "percorso");
+  }
+  function mostraAccesso(docente) {
+    $("#loginOwl").innerHTML = LN.gufo(docente ? "pensa" : "ciao");
+    $("#loginForm").hidden = !!docente;
+    $("#teacherForm").hidden = !docente;
+    show("accesso");
+    (docente ? $("#tEmail") : $("#lUser")).focus();
+  }
+  $("#lShow").addEventListener("click", function () {
+    var p = $("#lPass"), vis = p.type === "password";
+    p.type = vis ? "text" : "password"; this.textContent = vis ? "Nascondi" : "Mostra";
+  });
+  $("#loginForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    var u = $("#lUser").value.trim(), p = $("#lPass").value;
+    if (!u || !p) { $("#lErr").textContent = "Scrivi nome utente e password."; return; }
+    $("#lErr").textContent = ""; $("#lGo").disabled = true; $("#lGo").textContent = "Accesso…";
+    try { await LN.account.accedi(u, p); $("#lPass").value = ""; entra(); }
+    catch (err) { $("#lErr").textContent = err.message; $("#loginOwl").innerHTML = LN.gufo("incoraggia"); }
+    $("#lGo").disabled = false; $("#lGo").textContent = "Entra";
+  });
+  $("#teacherForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    var em = $("#tEmail").value.trim(), p = $("#tPass").value, p2 = $("#tPass2").value;
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { $("#tErr").textContent = "Scrivi un indirizzo email valido."; return; }
+    if (p.length < 10) { $("#tErr").textContent = "La password deve avere almeno 10 caratteri."; return; }
+    if (p !== p2) { $("#tErr").textContent = "Le due password non coincidono."; return; }
+    $("#tErr").textContent = ""; $("#tGo").disabled = true;
+    try {
+      await LN.account.creaDocente(em, p);
+      $("#teacherForm").innerHTML = "<h1>Account creato</h1><p>Ora va attivato come docente: è un'operazione da fare una sola volta. Dopo l'attivazione potrai entrare dalla pagina principale con la tua email e la tua password.</p>";
+      $("#loginOwl").innerHTML = LN.gufo("festa");
+    } catch (err) { $("#tErr").textContent = err.message; $("#tGo").disabled = false; }
+  });
+
+  (async function avvio() {
+    $("#loginOwl").innerHTML = LN.gufo("ciao");
+    if (location.hash === "#crea-docente") { try { await LN.account.init(); } catch (e) {} mostraAccesso(true); return; }
+    try {
+      var ruolo = await LN.account.init();
+      if (ruolo) entra(); else mostraAccesso(false);
+    } catch (e) {
+      mostraAccesso(false);
+      $("#lErr").textContent = LN.account.traduci(e);
+    }
+  })();
 })(window.LN);

@@ -1,5 +1,5 @@
-/* Progressi e impostazioni. Per ora restano nel browser; nella fase 2 lo stesso
-   oggetto verrà salvato nell'archivio online, legato al nome utente dello studente. */
+/* Progressi e impostazioni. Restano anche nel browser come copia di lavoro;
+   per gli studenti collegati vengono salvati online a ogni modifica (vedi account.js). */
 window.LN = window.LN || {};
 (function (LN) {
   "use strict";
@@ -14,16 +14,21 @@ window.LN = window.LN || {};
       impostazioni: { names: "it", sound: true, mode: "nomi", unlockAll: false }
     };
   }
-  var S = vuoto();
-  try {
-    var raw = JSON.parse(localStorage.getItem(KEY) || "null");
-    if (raw) {
-      S = Object.assign(vuoto(), raw);
-      S.impostazioni = Object.assign(vuoto().impostazioni, raw.impostazioni || {});
-    }
-  } catch (e) {}
+  function normalizza(raw) {
+    var s = Object.assign(vuoto(), raw || {});
+    s.impostazioni = Object.assign(vuoto().impostazioni, (raw && raw.impostazioni) || {});
+    s.best = Object.assign({}, (raw && raw.best) || {});
+    return s;
+  }
+  function leggiLocale() {
+    try { return JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { return null; }
+  }
+  var S = normalizza(leggiLocale());
 
-  function salva() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+  function salva() {
+    try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
+    if (typeof LN.store.onSave === "function") LN.store.onSave(S);
+  }
 
   function giorno(d) {
     d = d || new Date();
@@ -32,9 +37,17 @@ window.LN = window.LN || {};
   function ieri() { var d = new Date(); d.setDate(d.getDate() - 1); return giorno(d); }
 
   LN.store = {
+    onSave: null,
     get state() { return S; },
     get set() { return S.impostazioni; },
     salva: salva,
+
+    /* Usa i progressi di un utente: quelli online se ci sono, altrimenti la copia nel browser. */
+    attach: function (key, datiOnline) {
+      KEY = key;
+      S = normalizza(datiOnline || leggiLocale());
+      try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
+    },
 
     best: function (key) { return S.best[key] || { score: 0, stars: 0, ms: 0 }; },
     completata: function (key) { return (S.best[key] || {}).stars >= 2; },

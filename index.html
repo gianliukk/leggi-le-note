@@ -17,6 +17,7 @@
       <button class="tab" id="tab-percorso" data-view="percorso">Percorso</button>
       <button class="tab" id="tab-lezioni" data-view="lezioni">Lezioni</button>
       <button class="tab" id="tab-profilo" data-view="profilo">Profilo</button>
+      <button class="tab" id="tab-docente" data-view="docente" hidden>Docente</button>
     </nav>
     <div class="stats-top">
       <span class="stat-chip" id="chipSerie" title="Giorni di fila con almeno un allenamento"></span>
@@ -26,6 +27,36 @@
 </header>
 
 <main>
+  <section class="view" id="v-accesso" hidden>
+    <div class="col">
+      <div class="login">
+        <div class="login-owl" id="loginOwl"></div>
+        <form class="login-card" id="loginForm" novalidate>
+          <h1>Accedi</h1>
+          <p class="muted">Usa il nome utente e la password che ti ha dato il prof. Marano.</p>
+          <label class="fld"><span>Nome utente</span><input class="field" id="lUser" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>
+          <label class="fld"><span>Password</span><span class="pw-row"><input class="field" id="lPass" type="password" autocomplete="current-password" required><button type="button" class="btn-plain" id="lShow">Mostra</button></span></label>
+          <p class="err" id="lErr" role="alert"></p>
+          <button class="btn3d primary" type="submit" id="lGo">Entra</button>
+          <p class="muted small">Password dimenticata? Chiedine una nuova al prof. Marano.</p>
+        </form>
+        <form class="login-card" id="teacherForm" novalidate hidden>
+          <h1>Account docente</h1>
+          <p class="muted">Crea l'account con cui gestirai classi e studenti. Dopo la creazione va attivato una sola volta.</p>
+          <label class="fld"><span>Email</span><input class="field" id="tEmail" type="email" autocomplete="email" required></label>
+          <label class="fld"><span>Password (almeno 10 caratteri)</span><input class="field" id="tPass" type="password" autocomplete="new-password" required></label>
+          <label class="fld"><span>Ripeti la password</span><input class="field" id="tPass2" type="password" autocomplete="new-password" required></label>
+          <p class="err" id="tErr" role="alert"></p>
+          <button class="btn3d primary" type="submit" id="tGo">Crea account docente</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="v-docente" hidden>
+    <div class="wide" id="docente"></div>
+  </section>
+
   <section class="view" id="v-percorso" hidden>
     <div class="col">
       <div class="hero" id="hero"></div>
@@ -97,13 +128,18 @@
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<div id="printArea"></div>
 
+<script src="js/vendor/supabase.min.js"></script>
+<script src="js/config.js"></script>
 <script src="js/dati.js"></script>
 <script src="js/progressi.js"></script>
 <script src="js/suono.js"></script>
 <script src="js/pentagramma.js"></script>
 <script src="js/gufo.js"></script>
 <script src="js/lezioni.js"></script>
+<script src="js/account.js"></script>
+<script src="js/docente.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

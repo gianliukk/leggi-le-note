@@ -287,3 +287,54 @@ body.in-sessione .top { display: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---------- Fase 2: accesso, area docente, stampa ---------- */
+body.no-auth .tabs, body.no-auth .stats-top { display: none; }
+.muted { color: var(--muted); }
+.small { font-size: 0.85rem; }
+.err { color: var(--bad); font-weight: 700; min-height: 1.2em; }
+.err:empty { min-height: 0; }
+.field { border: 2px solid var(--line); background: var(--surface); border-radius: 12px; padding: 10px 12px; min-width: 0; width: 100%; }
+.field:focus { border-color: var(--gem); outline: none; }
+select.field { width: auto; padding: 6px 10px; }
+textarea.field { font-family: ui-monospace, Consolas, monospace; font-size: 0.95rem; resize: vertical; }
+code { font-family: ui-monospace, Consolas, monospace; font-size: 0.92em; background: var(--soft); border-radius: 6px; padding: 1px 6px; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.btn3d:disabled { opacity: 0.6; cursor: wait; }
+
+.login { display: grid; gap: 8px; justify-items: center; padding-top: 8px; }
+.login-owl { width: 150px; }
+.login-card { width: 100%; max-width: 420px; background: var(--surface); border: 2px solid var(--line); border-radius: 20px; padding: 24px; display: grid; gap: 12px; }
+.login-card h1 { font-size: 1.7rem; font-weight: 800; }
+.login-card .btn3d { width: 100%; }
+.fld { display: grid; gap: 4px; font-weight: 700; font-size: 0.92rem; }
+.pw-row { display: flex; gap: 6px; align-items: center; }
+.pw-row .btn-plain { flex: none; font-size: 0.8rem; }
+
+.head-block { display: grid; gap: 6px; margin-bottom: 20px; }
+.head-block h1 { font-size: clamp(1.8rem, 4.5vw, 2.4rem); font-weight: 800; letter-spacing: -0.02em; }
+.card { background: var(--surface); border: 2px solid var(--line); border-radius: 18px; margin-bottom: 18px; overflow: hidden; }
+.card-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 2px solid var(--line); }
+.card-head h2 { font-size: 1.15rem; }
+.pad { padding: 16px; }
+.grid-gap { display: grid; gap: 12px; }
+.board { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+.board th { text-align: left; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: 10px 12px; border-bottom: 2px solid var(--line); white-space: nowrap; }
+.board td { padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.board tr:last-child td { border-bottom: 0; }
+.board .num { text-align: right; }
+.board .who { font-weight: 700; }
+.board .linkish { color: var(--gem); }
+.note-warn { background: var(--soft); border-left: 4px solid var(--accent); border-radius: 10px; padding: 10px 14px; margin-block: 6px 10px; }
+
+#printArea { display: none; }
+@media print {
+  body > *:not(#printArea) { display: none !important; }
+  body { background: #FFFFFF; }
+  #printArea { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+  .slip { display: grid; grid-template-columns: 70px 1fr; gap: 12px; align-items: center; padding: 14px; border: 1px dashed #888888; break-inside: avoid; color: #000000; }
+  .slip strong { font-family: var(--display); font-size: 16pt; display: block; }
+  .slip span, .slip small { display: block; font-size: 11pt; }
+  .slip small { color: #555555; font-size: 9pt; margin-top: 4px; }
+  .slip b { font-family: ui-monospace, Consolas, monospace; font-size: 13pt; }
+}
