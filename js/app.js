@@ -96,11 +96,14 @@
       html += "</div></section>";
     });
     html += '<p class="path-end">Nuove unità in arrivo: ritmo, ascolto e diteggiatura del clarinetto.</p>';
-    $("#path").innerHTML = html;
+    $("#path").innerHTML = cartaRipasso() + html;
     updateChips();
   }
   $("#hero").addEventListener("click", function (e) { if (e.target.closest("#heroGo")) startSession(S.corrente()); });
   $("#path").addEventListener("click", function (e) {
+    if (e.target.closest("[data-ripasso]")) { startSession("ripasso"); return; }
+    var nr = e.target.closest(".ripasso-card g.n[data-midi]");
+    if (nr) { LN.suono.play(+nr.dataset.midi, +nr.dataset.dur || 1); return; }
     var g = e.target.closest("[data-lesson]");
     if (g) { lessonIdx = +g.dataset.lesson; show("lezioni"); return; }
     var n = e.target.closest("[data-tappa]");
@@ -110,24 +113,95 @@
     startSession(i);
   });
 
+  /* ---------- Ripasso degli errori ---------- */
+  /* Chiavi come in progressi.js: "n30" nota, "f3" figura, "p3" pausa. */
+  function trackDi(it) { return it.v != null ? "valori" : "note"; }
+  function chiave(it) { return trackDi(it) === "note" ? "n" + it.d : (it.rest ? "p" : "f") + it.v; }
+  function daChiave(k) { return k[0] === "n" ? { d: +k.slice(1) } : { v: +k.slice(1), rest: k[0] === "p" }; }
+  function nomeChiave(k) {
+    var it = daChiave(k);
+    if (it.d != null) return LN.nm(it.d);
+    var V = LN.VALUES[it.v];
+    return it.rest ? "pausa di " + V.name.toLowerCase() : V.name.toLowerCase();
+  }
+  function staffDi(chiavi, gap) {
+    return LN.staffSVG({ gap: gap || 34, notes: chiavi.map(function (k) {
+      var it = daChiave(k);
+      return it.d != null ? { d: it.d, label: LN.nm(it.d) } : { v: it.v, rest: it.rest, d: it.rest ? 34 : 32, label: LN.VALUES[it.v].frac };
+    }) });
+  }
+  /* Note e figure delle tappe già aperte: solo queste possono uscire nel ripasso. */
+  function conosciute() {
+    var set = {};
+    LN.TAPPE.forEach(function (T, i) { if (S.sbloccata(i)) T.L.items.forEach(function (it) { set[chiave(it)] = it; }); });
+    return set;
+  }
+  /* Una tappa di 10 domande: gli errori escono più spesso (quanto più "resta" da indovinare),
+     insieme alle note e figure vicine, che sono quelle con cui si confondono. */
+  function lezioneRipasso() {
+    var noti = conosciute(), items = [], letters = {}, vs = {}, ds = {};
+    function metti(it, volte) {
+      for (var i = 0; i < volte; i++) items.push(it);
+      if (it.d != null) { letters[it.d % 7] = 1; ds[it.d] = 1; } else vs[it.v] = 1;
+    }
+    S.daRipassare().forEach(function (x) {
+      var it = daChiave(x.k);
+      metti(it, x.resta + 1);
+      (it.d != null ? [{ d: it.d - 1 }, { d: it.d + 1 }] : [{ v: it.v - 1, rest: it.rest }, { v: it.v + 1, rest: it.rest }])
+        .forEach(function (n) { if (noti[chiave(n)]) metti(n, 1); });
+    });
+    // Tra le risposte possibili ci sono tutte le note e le figure già studiate, non solo quelle del ripasso.
+    var conNote = items.some(function (it) { return it.d != null; }), conValori = items.some(function (it) { return it.v != null; });
+    Object.keys(noti).forEach(function (k) {
+      var it = noti[k];
+      if (it.d != null && conNote) letters[it.d % 7] = 1;
+      if (it.v != null && conValori) vs[it.v] = 1;
+    });
+    function num(o) { return Object.keys(o).map(Number).sort(function (a, b) { return a - b; }); }
+    return { title: "Ripasso degli errori", q: 10, items: items, letters: num(letters), vs: num(vs), ds: num(ds) };
+  }
+  /* Errori da ripassare che appartengono a una tappa: escono anche lì, ogni tanto. */
+  function erroriDellaTappa(T) {
+    var mie = {};
+    T.L.items.forEach(function (it) { mie[chiave(it)] = it; });
+    return S.daRipassare().filter(function (x) { return mie[x.k]; }).map(function (x) { return mie[x.k]; });
+  }
+  function cartaRipasso() {
+    var lista = S.daRipassare();
+    if (!lista.length) return "";
+    var mostra = lista.slice(0, 6).map(function (x) { return x.k; });
+    return '<section class="ripasso-card"><div class="ripasso-testo"><div class="eyebrow">Ripasso</div>' +
+      "<h2>Ripassa i tuoi errori</h2><p>" + (lista.length === 1 ? "Hai 1 nota o figura da sistemare" : "Hai " + lista.length + " note o figure da sistemare") +
+      ": ognuna esce dal ripasso quando la indovini " + S.RIPASSO_VOLTE + " volte.</p></div>" +
+      '<figure class="fig">' + staffDi(mostra, 32) + "<figcaption>" + lista.slice(0, 6).map(function (x) { return esc(nomeChiave(x.k)); }).join(" · ") +
+      (lista.length > 6 ? " e altre " + (lista.length - 6) : "") + "</figcaption></figure>" +
+      '<button class="btn3d primary" data-ripasso="1">Ripassa</button></section>';
+  }
+
   /* ---------- Sessione ---------- */
   var sess = null;
   function startSession(gi) {
-    var T = LN.TAPPE[gi], en = S.energia();
+    var rip = gi === "ripasso", en = S.energia();
+    var T = rip ? { key: "ripasso", track: null, L: lezioneRipasso() } : LN.TAPPE[gi];
+    if (rip && !T.L.items.length) { toast("Non hai errori da ripassare: bravo!"); return; }
     if (!en.illimitata && en.valore === 0) toast("Energia finita: questa tappa non darà XP. Si ricarica tra " + minuti(en.prossima) + ".");
-    sess = { gi: gi, T: T, track: T.track, L: T.L, i: 0, ok: 0, misses: {}, ms: 0, qStart: 0, cur: null, locked: false, timer: null };
+    sess = { gi: gi, rip: rip, T: T, track: T.track, L: T.L, i: 0, ok: 0, misses: {}, esiti: [], extra: rip ? [] : erroriDellaTappa(T),
+      ms: 0, qStart: 0, cur: null, curKey: null, locked: false, timer: null };
     show("sessione");
-    renderAnswers();
+    if (!rip) renderAnswers();
     next();
   }
-  function same(a, b) { return a && b && a.d === b.d && a.v === b.v && a.rest === b.rest; }
   function next() {
     if (!sess) return;
     clearTimeout(sess.timer);
     $("#sheet").hidden = true;
     if (sess.i >= sess.L.q) { finish(); return; }
+    // Nelle tappe normali, una domanda su quattro (circa) ripropone un errore da ripassare.
+    var pool = sess.extra.length && Math.random() < 0.25 ? sess.extra : sess.L.items;
     var it, guard = 0;
-    do { it = pick(sess.L.items); guard++; } while (same(it, sess.cur) && guard < 30);
+    do { it = pick(pool); guard++; } while (chiave(it) === sess.curKey && guard < 30);
+    if (sess.rip && trackDi(it) !== sess.track) { sess.track = trackDi(it); renderAnswers(); }
+    sess.curKey = chiave(it);
     if (sess.track === "valori") it = { v: it.v, rest: it.rest, d: it.rest ? 34 : 29 + Math.floor(Math.random() * 9) };
     sess.cur = it; sess.locked = false;
     $("#prompt").textContent = sess.track === "note" ? "Come si chiama questa nota?" : it.rest ? "Che pausa è? Quanto vale?" : "Che figura è? Quanto vale?";
@@ -184,11 +258,9 @@
     $("#pFill").style.width = (sess.i / sess.L.q * 100) + "%";
     if (sess.track === "note") LN.suono.play(LN.midiOf(it.d), 0.9);
     else if (!it.rest) LN.suono.play(LN.midiOf(it.d), Math.min(LN.VALUES[it.v].beats * LN.BEAT, 3));
+    sess.esiti.push([sess.curKey, ok]);
     if (ok) sess.ok++;
-    else {
-      var key = sess.track === "note" ? "n" + it.d : (it.rest ? "p" : "f") + it.v;
-      sess.misses[key] = (sess.misses[key] || 0) + 1;
-    }
+    else sess.misses[sess.curKey] = (sess.misses[sess.curKey] || 0) + 1;
     drawStage(ok ? "ok" : "bad");
     var sh = $("#sheet");
     sh.className = "sheet " + (ok ? "ok" : "bad");
@@ -241,27 +313,31 @@
   /* ---------- Esito ---------- */
   function finish() {
     var s = sess, q = s.L.q;
-    var res = S.registra(s.T.key, s.ok, q, Math.round(s.ms));
+    var primaRipasso = S.daRipassare().length;
+    S.aggiornaErrori(s.esiti);
+    var restano = S.daRipassare().length;
+    var res = S.registra(s.T.key, s.ok, q, Math.round(s.ms), s.rip);
     LN.account.registraSessione(s.T.key, s.ok, q, s.ms, res.xp);
     var pct = Math.round(s.ok / q * 100), passed = res.stelle >= 2;
-    var nextT = LN.TAPPE[s.gi + 1];
-    var title = passed ? (res.sblocco ? "Tappa superata!" : "Ottimo lavoro!") : "Ci sei quasi!";
-    var sub = passed
-      ? (res.sblocco && nextT ? "Si apre la tappa successiva: " + nextT.L.title + "." : res.record ? "Nuovo record personale in questa tappa." : "Un ottimo ripasso.")
-      : "Per superare la tappa servono almeno " + Math.ceil(q * 0.8) + " risposte esatte su " + q + ". Ne hai date " + s.ok + ": riprova, ce la puoi fare.";
-    var review = "", keys = Object.keys(s.misses);
+    var nextT = s.rip ? null : LN.TAPPE[s.gi + 1];
+    var title, sub;
+    if (s.rip) {
+      var sistemati = Math.max(0, primaRipasso - restano);
+      title = restano ? "Ripasso fatto!" : "Errori sistemati!";
+      sub = (sistemati ? "Hai tolto dal ripasso " + (sistemati === 1 ? "1 nota o figura" : sistemati + " note o figure") + ". " : "") +
+        (restano ? "Te ne " + (restano === 1 ? "resta 1" : "restano " + restano) + " da ripassare: ognuna esce quando la indovini " + S.RIPASSO_VOLTE + " volte." : "Non hai più nulla da ripassare: complimenti!");
+    } else {
+      title = passed ? (res.sblocco ? "Tappa superata!" : "Ottimo lavoro!") : "Ci sei quasi!";
+      sub = passed
+        ? (res.sblocco && nextT ? "Si apre la tappa successiva: " + nextT.L.title + "." : res.record ? "Nuovo record personale in questa tappa." : "Un ottimo ripasso.")
+        : "Per superare la tappa servono almeno " + Math.ceil(q * 0.8) + " risposte esatte su " + q + ". Ne hai date " + s.ok + ": riprova, ce la puoi fare.";
+    }
+    var ORD = { n: 0, f: 1, p: 2 };
+    var review = "", keys = Object.keys(s.misses).sort(function (a, b) { return ORD[a[0]] - ORD[b[0]] || +a.slice(1) - +b.slice(1); });
     if (keys.length) {
-      var list, svg, cap;
-      if (s.track === "note") {
-        list = keys.map(function (k) { return { d: +k.slice(1), n: s.misses[k] }; }).sort(function (a, b) { return a.d - b.d; });
-        svg = LN.staffSVG({ notes: list.map(function (x) { return { d: x.d, label: LN.nm(x.d) }; }), gap: 32 });
-        cap = list.map(function (x) { return LN.nm(x.d) + (x.n > 1 ? " (" + x.n + " errori)" : ""); }).join(" · ") + ". Tocca le note per ascoltarle.";
-      } else {
-        list = keys.map(function (k) { return { rest: k[0] === "p", v: +k.slice(1), n: s.misses[k] }; }).sort(function (a, b) { return a.v - b.v; });
-        svg = LN.staffSVG({ notes: list.map(function (x) { return { v: x.v, rest: x.rest, d: x.rest ? 34 : 32, label: LN.VALUES[x.v].frac }; }), gap: 34 });
-        cap = list.map(function (x) { return (x.rest ? "pausa di " + LN.VALUES[x.v].name.toLowerCase() : LN.VALUES[x.v].name) + " " + LN.VALUES[x.v].frac; }).join(" · ");
-      }
-      review = '<div class="review"><h3>Da ripassare</h3><figure class="fig">' + svg + "<figcaption>" + cap + "</figcaption></figure></div>";
+      var cap = keys.map(function (k) { return nomeChiave(k) + (s.misses[k] > 1 ? " (" + s.misses[k] + " errori)" : ""); }).join(" · ");
+      review = '<div class="review"><h3>Da ripassare</h3><figure class="fig">' + staffDi(keys, 32) + "<figcaption>" + esc(cap) +
+        ". Tocca le note per ascoltarle. Le trovi anche nel ripasso del percorso.</figcaption></figure></div>";
     }
     $("#esito").innerHTML = '<div class="esito">' +
       LN.gufo(passed ? "festa" : res.stelle === 1 ? "pensa" : "incoraggia") +
@@ -275,12 +351,13 @@
       (res.senzaEnergia ? '<p class="energy-line">Energia finita: la tappa vale per stelle e serie, ma non per gli XP. La prossima carica arriva tra ' + minuti(S.energia().prossima) + ".</p>" :
        res.molt > 1 ? '<p class="bonus-line">Bonus continuità XP ×' + String(res.molt).replace(".", ",") + ": +" + (res.xp - res.base) + " XP extra!</p>" : bonusHint(res.serie)) +
       review +
-      '<div class="esito-actions"><button class="btn3d primary" id="goPath">Continua</button><button class="btn-plain" id="retry">Rifai la tappa</button></div></div>';
+      '<div class="esito-actions"><button class="btn3d primary" id="goPath">Continua</button>' +
+      (s.rip ? (restano ? '<button class="btn-plain" id="retry">Ripassa ancora</button>' : "") : '<button class="btn-plain" id="retry">Rifai la tappa</button>') + "</div></div>";
     var gi = s.gi;
     sess = null;
     show("esito");
     $("#goPath").addEventListener("click", function () { show("percorso"); scrollToCurrent(); });
-    $("#retry").addEventListener("click", function () { startSession(gi); });
+    if ($("#retry")) $("#retry").addEventListener("click", function () { startSession(gi); });
   }
   $("#esito").addEventListener("click", function (e) { var g = e.target.closest("g.n[data-midi]"); if (g) LN.suono.play(+g.dataset.midi, +g.dataset.dur || 1); });
   function scrollToCurrent() {

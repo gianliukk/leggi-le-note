@@ -11,6 +11,7 @@ window.LN = window.LN || {};
       serie: 0,
       ultimoGiorno: null,
       best: {},
+      errori: {},
       impostazioni: { names: "it", sound: true, mode: "nomi", unlockAll: false }
     };
   }
@@ -18,6 +19,7 @@ window.LN = window.LN || {};
     var s = Object.assign(vuoto(), raw || {});
     s.impostazioni = Object.assign(vuoto().impostazioni, (raw && raw.impostazioni) || {});
     s.best = Object.assign({}, (raw && raw.best) || {});
+    s.errori = Object.assign({}, (raw && raw.errori) || {});
     return s;
   }
   function leggiLocale() {
@@ -66,13 +68,31 @@ window.LN = window.LN || {};
     },
     oggiFatto: function () { return S.ultimoGiorno === giorno(); },
 
-    registra: function (key, esatte, totale, ms) {
+    /* Ripasso degli errori. Chiavi: "n30" = nota (grado 30), "f3" = figura (croma), "p3" = pausa.
+       Ogni errore mette la figura nel ripasso; esce dopo RIPASSO_VOLTE risposte giuste, e un nuovo errore la riporta a capo. */
+    RIPASSO_VOLTE: 3,
+    aggiornaErrori: function (esiti) {
+      var E = S.errori, n = this.RIPASSO_VOLTE;
+      esiti.forEach(function (x) {
+        var k = x[0], e = E[k];
+        if (!x[1]) E[k] = { resta: n, sbagli: (e ? e.sbagli : 0) + 1 };
+        else if (e && --e.resta <= 0) delete E[k];
+      });
+    },
+    /* [{ k, resta, sbagli }] dalle più "difficili" */
+    daRipassare: function () {
+      return Object.keys(S.errori).map(function (k) { return { k: k, resta: S.errori[k].resta, sbagli: S.errori[k].sbagli }; })
+        .sort(function (a, b) { return b.resta - a.resta || b.sbagli - a.sbagli; });
+    },
+
+    /* soloXp: per il ripasso, che dà XP e serie ma non è una tappa del percorso (niente stelle salvate). */
+    registra: function (key, esatte, totale, ms, soloXp) {
       var pct = esatte / totale;
       var stelle = pct >= 0.95 ? 3 : pct >= 0.8 ? 2 : pct >= 0.6 ? 1 : 0;
       var prima = this.corrente();
       var prev = this.best(key);
-      var migliore = !prev.score || esatte > prev.score || (esatte === prev.score && ms < prev.ms);
-      S.best[key] = migliore
+      var migliore = !soloXp && (!prev.score || esatte > prev.score || (esatte === prev.score && ms < prev.ms));
+      if (!soloXp) S.best[key] = migliore
         ? { score: esatte, stars: Math.max(stelle, prev.stars), ms: ms }
         : { score: prev.score, stars: Math.max(stelle, prev.stars), ms: prev.ms };
 
