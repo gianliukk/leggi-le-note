@@ -12,6 +12,7 @@ window.LN = window.LN || {};
       ultimoGiorno: null,
       best: {},
       errori: {},
+      missioni: null,
       impostazioni: { names: "it", sound: true, mode: "nomi", unlockAll: false }
     };
   }
@@ -20,6 +21,7 @@ window.LN = window.LN || {};
     s.impostazioni = Object.assign(vuoto().impostazioni, (raw && raw.impostazioni) || {});
     s.best = Object.assign({}, (raw && raw.best) || {});
     s.errori = Object.assign({}, (raw && raw.errori) || {});
+    s.missioni = (raw && raw.missioni) || null;
     return s;
   }
   function leggiLocale() {
@@ -83,6 +85,51 @@ window.LN = window.LN || {};
     daRipassare: function () {
       return Object.keys(S.errori).map(function (k) { return { k: k, resta: S.errori[k].resta, sbagli: S.errori[k].sbagli }; })
         .sort(function (a, b) { return b.resta - a.resta || b.sbagli - a.sbagli; });
+    },
+
+    /* Missioni del giorno: tre, una per gruppo, scelte dalla data (uguali per tutta la classe) e nuove a mezzanotte.
+       Ogni missione completata vale MISSIONE_XP; completarle tutte ricarica l'energia. */
+    MISSIONE_XP: 10,
+    POOL_MISSIONI: [
+      [{ t: "tappe", n: 2 }, { t: "tappe", n: 3 }, { t: "giuste", n: 30 }],
+      [{ t: "fila", n: 8 }, { t: "fila", n: 12 }, { t: "perfetta", n: 1 }],
+      [{ t: "xp", n: 40 }, { t: "ripasso", n: 1 }, { t: "valori", n: 1 }]
+    ],
+    missioni: function () {
+      var oggi = giorno(), m = S.missioni;
+      if (m && m.giorno === oggi) return m;
+      var h = 0, self = this;
+      for (var i = 0; i < oggi.length; i++) h = (h * 31 + oggi.charCodeAt(i)) >>> 0;
+      var valoriAperti = LN.TAPPE.some(function (T, j) { return T.track === "valori" && self.sbloccata(j); });
+      var lista = this.POOL_MISSIONI.map(function (gruppo, g) {
+        var ok = gruppo.filter(function (x) {
+          return (x.t !== "ripasso" || Object.keys(S.errori).length) && (x.t !== "valori" || valoriAperti);
+        });
+        var x = ok[(h >>> (g * 5)) % ok.length];
+        return { t: x.t, n: x.n, fatto: 0, ok: false };
+      });
+      S.missioni = { giorno: oggi, lista: lista, premio: false };
+      salva();
+      return S.missioni;
+    },
+    /* r: { xp, giuste, fila, perfetta, ripasso, track } di una tappa appena finita. */
+    aggiornaMissioni: function (r) {
+      var m = this.missioni(), nuove = [];
+      m.lista.forEach(function (x) {
+        if (x.ok) return;
+        if (x.t === "fila") x.fatto = Math.max(x.fatto, r.fila);
+        else x.fatto += { tappe: 1, giuste: r.giuste, xp: r.xp, perfetta: r.perfetta ? 1 : 0, ripasso: r.ripasso ? 1 : 0, valori: r.track === "valori" ? 1 : 0 }[x.t];
+        if (x.fatto >= x.n) { x.fatto = x.n; x.ok = true; nuove.push(x); }
+      });
+      var tutte = false;
+      if (nuove.length && !m.premio && m.lista.every(function (x) { return x.ok; })) {
+        m.premio = tutte = true;
+        if (!this.illimitata) { var e = this._energia(); e.valore = this.ENERGIA_MAX; e.agg = Date.now(); }
+      }
+      var bonus = nuove.length * this.MISSIONE_XP;
+      S.xp += bonus;
+      salva();
+      return { nuove: nuove, bonus: bonus, tutte: tutte };
     },
 
     /* soloXp: per il ripasso, che dà XP e serie ma non è una tappa del percorso (niente stelle salvate). */

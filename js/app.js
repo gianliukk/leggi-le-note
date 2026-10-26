@@ -96,7 +96,7 @@
       html += "</div></section>";
     });
     html += '<p class="path-end">Nuove unità in arrivo: ritmo, ascolto e diteggiatura del clarinetto.</p>';
-    $("#path").innerHTML = cartaRipasso() + html;
+    $("#path").innerHTML = cartaMissioni() + cartaRipasso() + html;
     updateChips();
   }
   $("#hero").addEventListener("click", function (e) { if (e.target.closest("#heroGo")) startSession(S.corrente()); });
@@ -178,6 +178,32 @@
       '<button class="btn3d primary" data-ripasso="1">Ripassa</button></section>';
   }
 
+  /* ---------- Missioni del giorno ---------- */
+  function testoMissione(x) {
+    return {
+      tappe: "Gioca " + x.n + " tappe",
+      giuste: "Dai " + x.n + " risposte giuste",
+      fila: "Dai " + x.n + " risposte giuste di fila in una tappa",
+      perfetta: "Completa una tappa senza errori",
+      xp: "Guadagna " + x.n + " XP nelle tappe",
+      ripasso: "Fai un ripasso degli errori",
+      valori: "Gioca una tappa su figure e pause"
+    }[x.t];
+  }
+  function cartaMissioni() {
+    var m = S.missioni(), fatte = m.lista.filter(function (x) { return x.ok; }).length;
+    return '<section class="missioni"><div class="miss-head"><div><div class="eyebrow">Oggi</div><h2>Missioni del giorno</h2></div>' +
+      '<span class="miss-conta">' + fatte + "/" + m.lista.length + "</span></div>" +
+      '<ul class="miss-lista">' + m.lista.map(function (x) {
+        return '<li class="miss' + (x.ok ? " ok" : "") + '"><span class="miss-ic">' + (x.ok ? ICON.check : ICON.star) + "</span>" +
+          '<div class="miss-main"><span class="miss-testo">' + testoMissione(x) + "</span>" +
+          '<span class="miss-bar" aria-hidden="true"><i style="width:' + Math.round(x.fatto / x.n * 100) + '%"></i></span></div>' +
+          '<span class="miss-num">' + (x.ok ? "+" + S.MISSIONE_XP + " XP" : x.fatto + "/" + x.n) + "</span></li>";
+      }).join("") + "</ul>" +
+      '<p class="miss-nota">' + (m.premio ? "Tutte completate: energia ricaricata al massimo. Domani arrivano missioni nuove!"
+        : "Ogni missione vale " + S.MISSIONE_XP + " XP. Completale tutte e tre e l'energia si ricarica al massimo. Si rinnovano a mezzanotte.") + "</p></section>";
+  }
+
   /* ---------- Sessione ---------- */
   var sess = null;
   function startSession(gi) {
@@ -186,7 +212,7 @@
     if (rip && !T.L.items.length) { toast("Non hai errori da ripassare: bravo!"); return; }
     if (!en.illimitata && en.valore === 0) toast("Energia finita: questa tappa non darà XP. Si ricarica tra " + minuti(en.prossima) + ".");
     sess = { gi: gi, rip: rip, T: T, track: T.track, L: T.L, i: 0, ok: 0, misses: {}, esiti: [], extra: rip ? [] : erroriDellaTappa(T),
-      ms: 0, qStart: 0, cur: null, curKey: null, locked: false, timer: null };
+      fila: 0, filaMax: 0, ms: 0, qStart: 0, cur: null, curKey: null, locked: false, timer: null };
     show("sessione");
     if (!rip) renderAnswers();
     next();
@@ -259,6 +285,8 @@
     if (sess.track === "note") LN.suono.play(LN.midiOf(it.d), 0.9);
     else if (!it.rest) LN.suono.play(LN.midiOf(it.d), Math.min(LN.VALUES[it.v].beats * LN.BEAT, 3));
     sess.esiti.push([sess.curKey, ok]);
+    sess.fila = ok ? sess.fila + 1 : 0;
+    sess.filaMax = Math.max(sess.filaMax, sess.fila);
     if (ok) sess.ok++;
     else sess.misses[sess.curKey] = (sess.misses[sess.curKey] || 0) + 1;
     drawStage(ok ? "ok" : "bad");
@@ -317,7 +345,14 @@
     S.aggiornaErrori(s.esiti);
     var restano = S.daRipassare().length;
     var res = S.registra(s.T.key, s.ok, q, Math.round(s.ms), s.rip);
-    LN.account.registraSessione(s.T.key, s.ok, q, s.ms, res.xp);
+    var mis = S.aggiornaMissioni({ xp: res.xp, giuste: s.ok, fila: s.filaMax, perfetta: s.ok === q, ripasso: s.rip, track: s.T.track });
+    // Gli XP delle missioni vanno nella stessa riga della tappa (il database accetta al massimo 100 XP per riga).
+    var xpRiga = Math.min(100, res.xp + mis.bonus);
+    if (res.xp + mis.bonus > xpRiga) { S.state.xp -= res.xp + mis.bonus - xpRiga; S.salva(); }
+    LN.account.registraSessione(s.T.key, s.ok, q, s.ms, xpRiga);
+    var missioniHtml = mis.nuove.length ? '<div class="miss-fatte">' + mis.nuove.map(function (x) {
+      return '<p><span class="miss-ic">' + ICON.check + "</span>Missione completata: " + testoMissione(x).toLowerCase() + " <b>+" + S.MISSIONE_XP + " XP</b></p>";
+    }).join("") + (mis.tutte ? '<p class="miss-tutte">Tutte le missioni di oggi completate: energia ricaricata al massimo!</p>' : "") + "</div>" : "";
     var pct = Math.round(s.ok / q * 100), passed = res.stelle >= 2;
     var nextT = s.rip ? null : LN.TAPPE[s.gi + 1];
     var title, sub;
@@ -350,7 +385,7 @@
       (res.serieSu ? '<p class="sub"><span style="color:var(--flame);display:inline-flex;width:20px;vertical-align:-4px">' + ICON.flame + "</span> <strong>Serie: " + res.serie + (res.serie === 1 ? " giorno" : " giorni di fila") + "</strong></p>" : "") +
       (res.senzaEnergia ? '<p class="energy-line">Energia finita: la tappa vale per stelle e serie, ma non per gli XP. La prossima carica arriva tra ' + minuti(S.energia().prossima) + ".</p>" :
        res.molt > 1 ? '<p class="bonus-line">Bonus continuità XP ×' + String(res.molt).replace(".", ",") + ": +" + (res.xp - res.base) + " XP extra!</p>" : bonusHint(res.serie)) +
-      review +
+      missioniHtml + review +
       '<div class="esito-actions"><button class="btn3d primary" id="goPath">Continua</button>' +
       (s.rip ? (restano ? '<button class="btn-plain" id="retry">Ripassa ancora</button>' : "") : '<button class="btn-plain" id="retry">Rifai la tappa</button>') + "</div></div>";
     var gi = s.gi;
