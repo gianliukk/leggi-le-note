@@ -103,6 +103,16 @@ window.LN = window.LN || {};
       return r.data || [];
     },
 
+    /* Leghe a livelli della settimana; null se lo script 08_leghe.sql non è ancora stato eseguito. */
+    leghe: async function () {
+      var r = await client.rpc("leghe");
+      if (r.error) {
+        if (/leghe/.test(r.error.message || "") && /function|find/i.test(r.error.message || "")) return null;
+        throw new Error(traduci(r.error));
+      }
+      return r.data || [];
+    },
+
     /* Classifica di sempre: XP totali, dell'anno scolastico e anno per anno. */
     storico: async function () {
       var r = await client.rpc("storico");

@@ -398,6 +398,27 @@ body.no-auth .tabs { display: none; }
 .lega-xp .gem, .gemst svg { color: var(--gem); display: inline-flex; }
 .lega-xp svg { width: 18px; height: 18px; }
 
+/* Leghe a livelli */
+.leghe-scudi { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
+.scudo-box { border: 2px solid var(--line); background: var(--surface); border-radius: 14px; padding: 8px 6px; display: grid; justify-items: center; gap: 2px; opacity: 0.55; font: inherit; color: inherit; }
+button.scudo-box { cursor: pointer; }
+.scudo-box.on { opacity: 1; border-color: var(--ink); }
+.scudo-box b { font-family: var(--display); font-weight: 800; }
+.scudo-box small { color: var(--muted); font-size: 0.78rem; }
+.scudo svg { width: 34px; height: 34px; display: block; }
+.lega-esito { border-radius: 14px; padding: 10px 14px; margin: -6px 0 16px; font-weight: 700; background: var(--soft); }
+.lega-esito.su { background: var(--ok-soft); color: var(--ok-shade); }
+.lega-esito.giu { background: var(--bad-soft); color: var(--bad-shade); }
+.lega-sep { display: flex; align-items: center; gap: 6px; padding: 4px 14px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; border-top: 1px solid var(--line); }
+.lega-sep svg { width: 16px; height: 16px; }
+.lega-sep.su { color: var(--ok-shade); background: var(--ok-soft); order: 0; }
+.lega-sep.giu { color: var(--bad-shade); background: var(--bad-soft); }
+.lega-row.su { box-shadow: inset 4px 0 0 var(--ok); }
+.lega-row.giu { box-shadow: inset 4px 0 0 var(--bad); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .lega-sep.su, :root:not([data-theme="light"]) .lega-esito.su { color: var(--ok); } :root:not([data-theme="light"]) .lega-sep.giu, :root:not([data-theme="light"]) .lega-esito.giu { color: var(--bad); } }
+:root[data-theme="dark"] .lega-sep.su, :root[data-theme="dark"] .lega-esito.su { color: var(--ok); }
+:root[data-theme="dark"] .lega-sep.giu, :root[data-theme="dark"] .lega-esito.giu { color: var(--bad); }
+
 /* Classifica dell'anno e di sempre, con lo storico che si apre sotto il nome */
 .seg-lega { margin-bottom: 16px; flex-wrap: wrap; }
 .lega-item { border-top: 1px solid var(--line); }

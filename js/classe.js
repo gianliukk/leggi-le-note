@@ -21,7 +21,12 @@ window.LN = window.LN || {};
 
   var TROFEO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v3h3v2a4 4 0 0 1-4 4h-.4A5 5 0 0 1 13 14.9V18h3v3H8v-3h3v-3.1A5 5 0 0 1 8.4 12H8a4 4 0 0 1-4-4V6h3zm-1 5a2 2 0 0 0 1 1.7V8zm12 0h-1v1.7A2 2 0 0 0 18 8z" fill="currentColor"/></svg>';
 
-  var filtro = "tutti", dati = [];
+  var SCUDO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.4 9.3-8 11-4.6-1.7-8-6-8-11V5z" fill="currentColor"/><path d="M13.2 6.5v7.2a2.3 2.3 0 1 1-1.3-2.1V6.5z" fill="#FFFFFF"/></svg>';
+  /* Leghe a livelli: i nomi dei tempi musicali, dal più lento al più veloce. */
+  var LEGHE = [null, { nome: "Andante", col: "var(--u0)" }, { nome: "Allegro", col: "var(--u2)" }, { nome: "Presto", col: "#C08F00" }];
+  function quanti(n) { return n >= 9 ? 3 : n >= 6 ? 2 : n >= 2 ? 1 : 0; } // come leghe_quanti in 08_leghe.sql
+
+  var filtro = "tutti", dati = [], leghe = null, legaVista = 1;
   var modo = "settimana", storico = null, erroreStorico = "", aperto = null;
 
   function annoScolastico() {
@@ -38,7 +43,12 @@ window.LN = window.LN || {};
   async function carica() {
     var box = $("#classe");
     box.innerHTML = '<p class="muted">Caricamento della classe…</p>';
-    try { dati = await A.compagni(); storico = null; render(); if (modo !== "settimana") caricaStorico(); }
+    try {
+      var r = await Promise.all([A.compagni(), A.leghe().catch(function () { return null; })]);
+      dati = r[0]; leghe = r[1]; storico = null;
+      render();
+      if (modo !== "settimana") caricaStorico();
+    }
     catch (e) { box.innerHTML = '<p class="err">' + esc(e.message) + "</p>"; }
   }
 
@@ -56,6 +66,54 @@ window.LN = window.LN || {};
   }
 
   function legaSettimana(me, g) {
+    return leghe ? legaLivelli(me, g) : legaUnica(me, g);
+  }
+
+  /* Ognuno vede la propria lega; il docente può sfogliarle tutte e tre. */
+  function legaLivelli(me, g) {
+    var mio = me && leghe.find(function (r) { return r.username === me; });
+    var liv = mio ? mio.livello : legaVista, L = LEGHE[liv];
+    var membri = leghe.filter(function (r) { return r.livello === liv; })
+      .sort(function (a, b) { return b.xp_settimana - a.xp_settimana || a.username.localeCompare(b.username); });
+    var n = membri.length, k = quanti(n), su = liv < 3 ? k : 0, giu = liv > 1 ? k : 0;
+
+    var html = '<div class="leghe-scudi">' + [1, 2, 3].map(function (i) {
+      var on = i === liv, quanti_i = leghe.filter(function (r) { return r.livello === i; }).length;
+      var inner = '<span class="scudo" style="color:' + LEGHE[i].col + '">' + SCUDO + "</span><b>" + LEGHE[i].nome + "</b>" +
+        (mio ? "" : "<small>" + quanti_i + (quanti_i === 1 ? " studente" : " studenti") + "</small>");
+      return mio ? '<div class="scudo-box' + (on ? " on" : "") + '">' + inner + "</div>"
+        : '<button class="scudo-box' + (on ? " on" : "") + '" data-lega="' + i + '" aria-pressed="' + on + '">' + inner + "</button>";
+    }).join("") + "</div>";
+
+    var regola = [];
+    if (su) regola.push((su === 1 ? "il primo sale" : "i primi " + su + " salgono") + " in " + LEGHE[liv + 1].nome);
+    if (giu) regola.push((giu === 1 ? "l’ultimo scende" : "gli ultimi " + giu + " scendono") + " in " + LEGHE[liv - 1].nome);
+    html += '<div class="head-block"><div class="eyebrow">Lega della settimana</div><h1>Lega ' + L.nome + "</h1>" +
+      '<p class="muted">Conta gli XP guadagnati da lunedì. Domenica a mezzanotte la lega si chiude' +
+      (regola.length ? ": " + regola.join(", ") + "." : ".") +
+      (su ? " Per salire serve almeno 1 XP." : "") + "</p>" +
+      '<span class="lega-chip">' + (g === 1 ? "Ultimo giorno: dai il massimo!" : "Mancano " + g + " giorni alla fine") + "</span></div>";
+
+    if (mio && mio.esito) {
+      var pos = mio.posizione + "° posto";
+      html += mio.esito === "su" ? '<p class="lega-esito su">La settimana scorsa: ' + pos + " e promozione nella lega " + LEGHE[liv].nome + "!</p>"
+        : mio.esito === "giu" ? '<p class="lega-esito giu">La settimana scorsa: ' + pos + " e retrocessione nella lega " + LEGHE[liv].nome + ". Questa settimana puoi risalire!</p>"
+        : '<p class="lega-esito">La settimana scorsa: ' + pos + " nella lega " + LEGHE[liv].nome + ".</p>";
+    }
+
+    if (!n) return html + '<p class="muted">In questa lega non c\'è ancora nessuno.</p>';
+    return html + '<ol class="lega">' + membri.map(function (r, i) {
+      var isMe = r.username === me, zona = i < su ? " su" : i >= n - giu ? " giu" : "";
+      var sep = su && i === su ? '<li class="lega-sep su">' + SU + "Zona promozione</li>" : "";
+      if (giu && i === n - giu) sep += '<li class="lega-sep giu">' + GIU + "Zona retrocessione</li>";
+      return sep + '<li class="lega-row' + zona + (isMe ? " me" : "") + (r.xp_settimana === 0 ? " zero" : "") + '">' + riga(r, i + 1, r.xp_settimana, isMe) + "</li>";
+    }).join("") + "</ol>";
+  }
+  var SU = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5l7 8h-4.5v6h-5v-6H5z" fill="currentColor"/></svg>';
+  var GIU = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19l-7-8h4.5V5h5v6H19z" fill="currentColor"/></svg>';
+
+  /* Lega unica, finché lo script delle leghe a livelli non è attivo. */
+  function legaUnica(me, g) {
     var lega = dati.slice().sort(function (a, b) { return b.xp_settimana - a.xp_settimana || a.username.localeCompare(b.username); });
     var html = '<div class="head-block"><div class="eyebrow">Lega della settimana</div><h1>Chi suona di più?</h1>' +
       '<p class="muted">Conta gli XP guadagnati da lunedì. Domenica a mezzanotte la lega si chiude e lunedì si riparte tutti da zero.</p>' +
@@ -154,6 +212,8 @@ window.LN = window.LN || {};
   document.addEventListener("click", function (e) {
     var b = e.target.closest("[data-filtro]");
     if (b && $("#classe").contains(b)) { filtro = b.dataset.filtro; render(); return; }
+    var lg = e.target.closest("[data-lega]");
+    if (lg && $("#classe").contains(lg)) { legaVista = +lg.dataset.lega; render(); return; }
     var m = e.target.closest("[data-modo]");
     if (m && $("#classe").contains(m)) {
       modo = m.dataset.modo; aperto = null; render();
