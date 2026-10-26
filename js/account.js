@@ -61,6 +61,7 @@ window.LN = window.LN || {};
         this.profilo = { username: "Docente", classe: "" };
         LN.store.attach("leggi-le-note-docente", null);
         LN.store.illimitata = true;
+        LN.store.tuttoAperto = true;
         return;
       }
       var s = await client.from("studenti").select("username, avatar, classi(nome)").eq("user_id", user.id).maybeSingle();

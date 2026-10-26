@@ -591,7 +591,7 @@
     var acc = LN.account, doc = acc.ruolo === "docente";
     var nome = doc ? "Prof. Marano" : esc(acc.profilo ? acc.profilo.username : "Ospite");
     var info = doc
-      ? "Qui giochi in prova: i tuoi risultati restano su questo dispositivo e non entrano nelle classifiche. Gli studenti li segui dalla sezione Docente."
+      ? "Qui giochi in prova, con tutte le tappe aperte: i tuoi risultati restano su questo dispositivo e non entrano nelle classifiche. Gli studenti li segui dalla sezione Docente."
       : "Classe " + esc(acc.profilo && acc.profilo.classe || "–") + ". I tuoi progressi sono salvati online: ti seguono su ogni computer, tablet o telefono.";
     $("#profilo").innerHTML =
       '<div class="profile-head">' + LN.gufo("ciao") + "<div><h1>" + nome + "</h1><p>" + info + '</p><button class="btn3d" id="logoutBtn">Esci</button></div></div>' +
@@ -606,8 +606,7 @@
       '<div class="set-row"><span class="lbl">Suono del clarinetto</span>' + seg("sound", [["true", "Sì"], ["false", "No"]], S.set.sound) + "</div>" +
       '<div class="set-row"><span class="lbl">Rispondi alle note con<span class="desc">La tastiera mostra il pianoforte al posto dei pulsanti.</span></span>' + seg("mode", [["nomi", "Nomi"], ["tastiera", "Tastiera"]], S.set.mode) + "</div>" +
       (doc
-        ? '<div class="set-row"><span class="lbl">Sblocca tutte le tappe<span class="desc">Per mostrarle in classe alla LIM.</span></span>' + seg("unlockAll", [["false", "No"], ["true", "Sì"]], S.set.unlockAll) + "</div>" +
-          '<div class="set-row"><span class="lbl">Azzera le tue prove<span class="desc">Cancella XP, serie e stelle del profilo docente.</span></span><span id="resetBox"><button class="linkish" id="resetBtn">Azzera</button></span></div>'
+        ? '<div class="set-row"><span class="lbl">Azzera le tue prove<span class="desc">Cancella XP, serie e stelle del profilo docente.</span></span><span id="resetBox"><button class="linkish" id="resetBtn">Azzera</button></span></div>'
         : "") +
       "</div>";
   }

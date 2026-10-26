@@ -64,7 +64,7 @@ window.LN = window.LN || {};
     /* Aperta se è la prossima da fare, se è già superata o se è superata quella prima
        (così, quando si aggiunge un'unità nuova nel mezzo, chi è più avanti non perde le tappe già aperte). */
     sbloccata: function (i) {
-      if (S.impostazioni.unlockAll || i <= this.corrente()) return true;
+      if (this.tuttoAperto || S.impostazioni.unlockAll || i <= this.corrente()) return true;
       return this.completata(LN.TAPPE[i].key) || (i > 0 && this.completata(LN.TAPPE[i - 1].key));
     },
 
@@ -205,6 +205,7 @@ window.LN = window.LN || {};
     ENERGIA_MAX: 5,
     RICARICA_MS: 30 * 60 * 1000,
     illimitata: false,
+    tuttoAperto: false, // account docente: tutte le tappe aperte, per provarle e mostrarle alla LIM
     _energia: function () {
       var now = Date.now(), e = S.energia;
       if (!e || typeof e.valore !== "number") e = S.energia = { valore: this.ENERGIA_MAX, agg: now };
