@@ -61,7 +61,12 @@ window.LN = window.LN || {};
       for (var i = 0; i < LN.TAPPE.length; i++) if (!this.completata(LN.TAPPE[i].key)) return i;
       return LN.TAPPE.length;
     },
-    sbloccata: function (i) { return S.impostazioni.unlockAll || i <= this.corrente(); },
+    /* Aperta se è la prossima da fare, se è già superata o se è superata quella prima
+       (così, quando si aggiunge un'unità nuova nel mezzo, chi è più avanti non perde le tappe già aperte). */
+    sbloccata: function (i) {
+      if (S.impostazioni.unlockAll || i <= this.corrente()) return true;
+      return this.completata(LN.TAPPE[i].key) || (i > 0 && this.completata(LN.TAPPE[i - 1].key));
+    },
 
     /* Corone (𝄐): una ogni CORONA_OGNI giorni di fila, al massimo CORONE_MAX.
        Ogni giorno saltato ne consuma una e la serie resta viva (senza crescere). */

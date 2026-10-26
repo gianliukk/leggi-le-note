@@ -59,9 +59,30 @@ window.LN = window.LN || {};
     });
   });
 
+  /* Ascolto: due note una dopo l'altra (a, poi b), entro un'ottava dal Do centrale.
+     Risposte: 0 = sale, 1 = scende, 2 = resta uguale. */
+  var ASC_LEVELS = [
+    { title: "Sale o scende?", min: 3, max: 7, uguali: false, q: 10 },
+    { title: "Passi vicini", min: 1, max: 2, uguali: false, q: 12 },
+    { title: "Sale, scende o resta?", min: 1, max: 4, uguali: true, q: 14 }
+  ];
+  ASC_LEVELS.forEach(function (L) {
+    L.items = [];
+    r(28, 35).forEach(function (a) {
+      r(28, 35).forEach(function (b) {
+        var dist = Math.abs(a - b);
+        if (dist >= L.min && dist <= L.max) L.items.push({ a: a, b: b });
+      });
+    });
+    // Le note ripetute escono più o meno una volta su tre.
+    if (L.uguali) { var n = Math.round(L.items.length / 2); for (var i = 0; i < n; i++) { var a = 28 + (i % 8); L.items.push({ a: a, b: a }); } }
+    L.keys = L.uguali ? [0, 1, 2] : [0, 1];
+  });
+
   LN.TRACKS = {
     note: { levels: NOTE_LEVELS, label: "Note" },
-    valori: { levels: VAL_LEVELS, label: "Valori" }
+    valori: { levels: VAL_LEVELS, label: "Valori" },
+    ascolto: { levels: ASC_LEVELS, label: "Ascolto" }
   };
 
   /* Il percorso: unità in ordine, ognuna con la sua lezione di guida e le sue tappe. */
@@ -69,6 +90,7 @@ window.LN = window.LN || {};
     { titolo: "Le prime note", descr: "Do, Re, Mi e poi il Fa", lezione: 2, tappe: [["note", 1], ["note", 2]] },
     { titolo: "Quanto dura una nota", descr: "Semibreve, minima, semiminima, croma", lezione: 6, tappe: [["valori", 1], ["valori", 2]] },
     { titolo: "La scala", descr: "Sol, La, Si: tutte e sette le note", lezione: 3, tappe: [["note", 3], ["note", 4], ["note", 5]] },
+    { titolo: "Orecchio attento", descr: "Ascolta: la nota sale o scende?", lezione: 8, tappe: [["ascolto", 1], ["ascolto", 2], ["ascolto", 3]] },
     { titolo: "Figure veloci", descr: "Semicroma e biscroma", lezione: 6, tappe: [["valori", 3]] },
     { titolo: "Verso l'acuto", descr: "Dal Do al Mi acuto", lezione: 4, tappe: [["note", 6], ["note", 7]] },
     { titolo: "Il silenzio conta", descr: "Le pause", lezione: 7, tappe: [["valori", 4], ["valori", 5]] },

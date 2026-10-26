@@ -5,7 +5,8 @@ window.LN = window.LN || {};
   "use strict";
   var S = LN.store;
   function st() { return S.state.stat || {}; }
-  function unitaFatta(u) {
+  function unitaFatta(titolo) {
+    var u = LN.PERCORSO.findIndex(function (x) { return x.titolo === titolo; });
     return LN.TAPPE.filter(function (t) { return t.unit === u; }).every(function (t) { return S.completata(t.key); }) ? 1 : 0;
   }
   function conStelle(k) { return LN.TAPPE.filter(function (t) { return S.best(t.key).stars >= k; }).length; }
@@ -17,10 +18,11 @@ window.LN = window.LN || {};
 
   LN.MEDAGLIE = [
     { id: "primo", nome: "Primo concerto", descr: "Gioca la tua prima tappa", segno: "♩", n: 1, val: function () { return S.state.xp > 0 || Object.keys(S.state.best).length ? 1 : 0; } },
-    { id: "domi", nome: "Do, Re, Mi", descr: "Supera l'unità «Le prime note»", segno: "\u{1D11E}", n: 1, val: function () { return unitaFatta(0); } },
-    { id: "durate", nome: "Tempo giusto", descr: "Supera l'unità «Quanto dura una nota»", segno: "\u{1D15E}", n: 1, val: function () { return unitaFatta(1); } },
-    { id: "scala", nome: "Scala completa", descr: "Supera l'unità «La scala»", segno: "♫", n: 1, val: function () { return unitaFatta(2); } },
-    { id: "pause", nome: "Il silenzio conta", descr: "Supera l'unità «Il silenzio conta»", segno: "\u{1D13D}", n: 1, val: function () { return unitaFatta(5); } },
+    { id: "domi", nome: "Do, Re, Mi", descr: "Supera l'unità «Le prime note»", segno: "\u{1D11E}", n: 1, val: function () { return unitaFatta("Le prime note"); } },
+    { id: "durate", nome: "Tempo giusto", descr: "Supera l'unità «Quanto dura una nota»", segno: "\u{1D15E}", n: 1, val: function () { return unitaFatta("Quanto dura una nota"); } },
+    { id: "scala", nome: "Scala completa", descr: "Supera l'unità «La scala»", segno: "♫", n: 1, val: function () { return unitaFatta("La scala"); } },
+    { id: "pause", nome: "Il silenzio conta", descr: "Supera l'unità «Il silenzio conta»", segno: "\u{1D13D}", n: 1, val: function () { return unitaFatta("Il silenzio conta"); } },
+    { id: "orecchio", nome: "Orecchio d'oro", descr: "Supera l'unità «Orecchio attento»", segno: "\u{1D192}", n: 1, val: function () { return unitaFatta("Orecchio attento"); } },
     { id: "finale", nome: "Gran finale", descr: "Supera tutte le tappe del percorso", segno: "\u{1D102}", sc: 1.3, n: LN.TAPPE.length, val: function () { return LN.TAPPE.filter(function (t) { return S.completata(t.key); }).length; } },
     { id: "perfetta", nome: "Esecuzione perfetta", descr: "Completa una tappa senza errori", segno: "♬", n: 1, val: perfette },
     { id: "leggio", nome: "Leggio d'oro", descr: "Prendi 3 stelle in 5 tappe", segno: "\u{1D11A}", n: 5, val: function () { return conStelle(3); } },

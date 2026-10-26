@@ -27,9 +27,9 @@ window.LN = window.LN || {};
     buffers[key] = new Promise(function (res) { actx.decodeAudioData(u.buffer, res, function () { res(null); }); });
     return buffers[key];
   }
-  function synth(m, dur) {
+  function synth(m, dur, t0) {
     var a = ctx(); if (!a) return;
-    var t = a.currentTime, f = 440 * Math.pow(2, (m - 69) / 12), g = a.createGain();
+    var t = t0 || a.currentTime, f = 440 * Math.pow(2, (m - 69) / 12), g = a.createGain();
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(0.25, t + 0.04);
     g.gain.setValueAtTime(0.25, t + Math.max(0.05, dur - 0.08));
@@ -42,22 +42,35 @@ window.LN = window.LN || {};
     });
   }
 
+  function chiave(m) { return CHROMA[m % 12] + (Math.floor(m / 12) - 1); }
+  function suona(a, buf, m, dur, t) {
+    if (!buf) { synth(m, dur, t); return; }
+    var src = a.createBufferSource(), g = a.createGain();
+    src.buffer = buf;
+    g.gain.setValueAtTime(0.9, t);
+    g.gain.setValueAtTime(0.9, t + Math.max(0.04, dur - 0.06));
+    g.gain.linearRampToValueAtTime(0.0001, t + dur + 0.08);
+    src.connect(g); g.connect(a.destination);
+    src.start(t); src.stop(t + dur + 0.1);
+  }
+
   LN.suono = {
     /* m = nota MIDI da far suonare (già trasposta se serve), dur = secondi */
     play: function (m, dur) {
       if (!LN.store.set.sound) return;
       dur = dur || 1;
       var a = ctx(); if (!a) return;
-      var key = CHROMA[m % 12] + (Math.floor(m / 12) - 1);
-      loadBank().then(function () { return getBuffer(key); }).then(function (buf) {
-        if (!buf) { synth(m, dur); return; }
-        var t = a.currentTime, src = a.createBufferSource(), g = a.createGain();
-        src.buffer = buf;
-        g.gain.setValueAtTime(0.9, t);
-        g.gain.setValueAtTime(0.9, t + Math.max(0.04, dur - 0.06));
-        g.gain.linearRampToValueAtTime(0.0001, t + dur + 0.08);
-        src.connect(g); g.connect(a.destination);
-        src.start(t); src.stop(t + dur + 0.1);
+      loadBank().then(function () { return getBuffer(chiave(m)); }).then(function (buf) { suona(a, buf, m, dur, a.currentTime); });
+    },
+    /* Note una dopo l'altra: [[midi, secondi], ...]. forza = suona anche col suono spento (esercizi d'ascolto). */
+    sequenza: function (note, forza) {
+      if (!forza && !LN.store.set.sound) return;
+      var a = ctx(); if (!a) return;
+      loadBank().then(function () {
+        return Promise.all(note.map(function (n) { return getBuffer(chiave(n[0])); }));
+      }).then(function (bufs) {
+        var t = a.currentTime + 0.05;
+        note.forEach(function (n, i) { suona(a, bufs[i], n[0], n[1], t); t += n[1] + 0.15; });
       });
     },
     /* Clarinetto in Sib: il suono reale è un tono sotto la nota scritta. */

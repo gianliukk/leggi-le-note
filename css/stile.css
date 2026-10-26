@@ -251,6 +251,15 @@ body.in-sessione .top { display: none; }
 .ans.ok { background: var(--ok-soft); border-color: var(--ok); color: var(--ok-shade); }
 .ans.bad { background: var(--bad-soft); border-color: var(--bad); color: var(--bad-shade); }
 .answers.values .ans { font-size: 1rem; }
+.answers.dir .ans { grid-auto-flow: column; gap: 8px; align-items: center; }
+.dir-ic { font-size: 1.6rem; line-height: 1; color: var(--gem); }
+.ans.ok .dir-ic { color: inherit; }
+.asc { display: grid; justify-items: center; gap: 8px; padding: 18px 0 8px; text-align: center; }
+.asc span { font-weight: 800; }
+.asc-btn { width: 112px; height: 112px; border-radius: 50%; border: 0; background: var(--gem); color: #FFFFFF; box-shadow: 0 7px 0 #2A6DB5; display: grid; place-items: center; cursor: pointer; transition: transform 0.08s, box-shadow 0.08s; }
+.asc-btn:active { transform: translateY(5px); box-shadow: 0 2px 0 #2A6DB5; }
+.asc-btn svg { width: 56px; height: 56px; }
+.asc-dopo { display: grid; justify-items: center; }
 .hint { font-size: 0.82rem; color: var(--muted); text-align: center; }
 .kbd { font-family: ui-monospace, Consolas, monospace; font-size: 0.78rem; background: var(--soft); border-radius: 4px; padding: 1px 5px; }
 .piano-wrap { overflow-x: auto; padding-bottom: 4px; }

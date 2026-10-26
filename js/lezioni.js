@@ -64,6 +64,15 @@ window.LN = window.LN || {};
       "<p>La <strong>pausa</strong> indica un silenzio. Ogni figura ha la sua pausa, che dura esattamente quanto lei.</p>",
       valueTable(true),
       "<p>Attenzione alle prime due: la pausa di semibreve è un rettangolino <strong>appeso</strong> sotto la quarta riga, la pausa di minima è <strong>appoggiata</strong> sopra la terza riga.</p>"
+    ]; } },
+    { t: "Acuto e grave", body: function () { return [
+      "<p>Un suono può essere <strong>acuto</strong>, cioè alto, come il canto di un uccellino, oppure <strong>grave</strong>, cioè basso, come la voce di un orso. Questa qualità del suono si chiama <strong>altezza</strong>.</p>",
+      "<p>Quando ascolti due note una dopo l'altra, la seconda può <strong>salire</strong> (è più acuta), <strong>scendere</strong> (è più grave) oppure <strong>restare uguale</strong>.</p>",
+      fig({ notes: named([28, 32]), gap: 48 }, "Dal Do al Sol: la melodia sale. Tocca le note per ascoltarle"),
+      fig({ notes: named([33, 29]), gap: 48 }, "Dal La al Re: la melodia scende"),
+      fig({ notes: named([31, 31]), gap: 48 }, "Fa e ancora Fa: la nota resta uguale"),
+      "<p>Sul pentagramma succede la stessa cosa: se la seconda nota è scritta <strong>più in alto</strong>, il suono sale; se è scritta <strong>più in basso</strong>, il suono scende.</p>",
+      '<p class="tip">Più le due note sono vicine, più è difficile sentire la differenza: ascolta con attenzione, anche più volte.</p>'
     ]; } }
   ];
 })(window.LN);

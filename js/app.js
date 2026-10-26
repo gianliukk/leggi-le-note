@@ -10,6 +10,7 @@
   var ICON = {
     note: '<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="9" cy="17" rx="5.2" ry="3.7" transform="rotate(-20 9 17)" fill="currentColor"/><rect x="12.7" y="3" width="2.3" height="14" fill="currentColor"/></svg>',
     valori: '<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="8" cy="18" rx="5" ry="3.6" transform="rotate(-20 8 18)" fill="currentColor"/><rect x="11.4" y="3" width="2.3" height="15" fill="currentColor"/><path d="M13.7 3 C14 6.5 20 7.5 18.6 13 C18 10 16 8.8 13.7 8.6 Z" fill="currentColor"/></svg>',
+    ascolto: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.6 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
     lock: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10.5" rx="2.5" fill="currentColor"/><path d="M8.2 10.5V7.6a3.8 3.8 0 0 1 7.6 0v2.9" fill="none" stroke="currentColor" stroke-width="2.6"/></svg>',
     flame: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.5 2c.6 3.6 6.5 5.6 6.5 12a7 7 0 0 1-14 0c0-3.2 1.9-5.4 3.3-6.6.1 2 1 3.3 2.3 3.6C10.3 7.6 10.8 4.6 12.5 2z" fill="currentColor"/></svg>',
     gem: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3h11l4.5 6.2L12 21 2 9.2z" fill="currentColor"/><path d="M2 9.2h20M8.5 9.2 12 21l3.5-11.8" stroke="#FFFFFF" stroke-opacity=".45" stroke-width="1.2" fill="none"/></svg>',
@@ -108,7 +109,7 @@
       });
       html += "</div></section>";
     });
-    html += '<p class="path-end">Nuove unità in arrivo: ritmo, ascolto e diteggiatura del clarinetto.</p>';
+    html += '<p class="path-end">Nuove unità in arrivo: ritmo e diteggiatura del clarinetto.</p>';
     $("#path").innerHTML = cartaMissioni() + cartaRipasso() + html;
     updateChips();
   }
@@ -128,8 +129,11 @@
 
   /* ---------- Ripasso degli errori ---------- */
   /* Chiavi come in progressi.js: "n30" nota, "f3" figura, "p3" pausa. */
-  function trackDi(it) { return it.v != null ? "valori" : "note"; }
-  function chiave(it) { return trackDi(it) === "note" ? "n" + it.d : (it.rest ? "p" : "f") + it.v; }
+  function trackDi(it) { return it.a != null ? "ascolto" : it.v != null ? "valori" : "note"; }
+  function chiave(it) {
+    var t = trackDi(it);
+    return t === "ascolto" ? "a" + it.a + "-" + it.b : t === "note" ? "n" + it.d : (it.rest ? "p" : "f") + it.v;
+  }
   function daChiave(k) { return k[0] === "n" ? { d: +k.slice(1) } : { v: +k.slice(1), rest: k[0] === "p" }; }
   function nomeChiave(k) {
     var it = daChiave(k);
@@ -146,7 +150,7 @@
   /* Note e figure delle tappe già aperte: solo queste possono uscire nel ripasso. */
   function conosciute() {
     var set = {};
-    LN.TAPPE.forEach(function (T, i) { if (S.sbloccata(i)) T.L.items.forEach(function (it) { set[chiave(it)] = it; }); });
+    LN.TAPPE.forEach(function (T, i) { if (T.track !== "ascolto" && S.sbloccata(i)) T.L.items.forEach(function (it) { set[chiave(it)] = it; }); });
     return set;
   }
   /* Una tappa di 10 domande: gli errori escono più spesso (quanto più "resta" da indovinare),
@@ -243,26 +247,42 @@
     sess.curKey = chiave(it);
     if (sess.track === "valori") it = { v: it.v, rest: it.rest, d: it.rest ? 34 : 29 + Math.floor(Math.random() * 9) };
     sess.cur = it; sess.locked = false;
-    $("#prompt").textContent = sess.track === "note" ? "Come si chiama questa nota?" : it.rest ? "Che pausa è? Quanto vale?" : "Che figura è? Quanto vale?";
+    $("#prompt").textContent = sess.track === "ascolto" ? (sess.L.uguali ? "La seconda nota sale, scende o resta uguale?" : "La seconda nota sale o scende?")
+      : sess.track === "note" ? "Come si chiama questa nota?" : it.rest ? "Che pausa è? Quanto vale?" : "Che figura è? Quanto vale?";
     drawStage("");
+    if (sess.track === "ascolto") suonaCoppia();
     $("#sessCount").textContent = (sess.i + 1) + "/" + sess.L.q;
     $("#pFill").style.width = (sess.i / sess.L.q * 100) + "%";
     document.querySelectorAll(".ans").forEach(function (b) { b.classList.remove("ok", "bad"); });
     if (pianoMode()) renderPiano();
     sess.qStart = performance.now();
   }
+  /* Ascolto: prima della risposta si vede solo il pulsante per riascoltare; dopo, le due note sul pentagramma. */
+  function nomeAsc(d) { return LN.nm(d) + (d >= 35 ? " acuto" : ""); } // nell'ascolto c'è il Do centrale e il Do acuto
+  function suonaCoppia() { LN.suono.sequenza([[LN.midiOf(sess.cur.a), 0.8], [LN.midiOf(sess.cur.b), 0.8]], true); }
+  var ORECCHIO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9v6h4l5 4V5L9 9z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
   function drawStage(cls) {
     var it = sess.cur;
+    if (sess.track === "ascolto") {
+      $("#stage").innerHTML = cls
+        ? '<div class="asc-dopo">' + LN.staffSVG({ notes: [{ d: it.a, label: nomeAsc(it.a) }, { d: it.b, label: nomeAsc(it.b), cls: cls }], gap: 56, startX: 70, scale: 2, aria: "Le due note ascoltate" }) + "</div>"
+        : '<div class="asc"><button class="asc-btn" id="riascolta" aria-label="Ascolta di nuovo le due note">' + ORECCHIO + "</button>" +
+          '<span>Tocca per ascoltare di nuovo</span><small class="muted">Se non senti nulla, alza il volume.</small></div>';
+      return;
+    }
     $("#stage").innerHTML = LN.staffSVG({ notes: [{ d: it.d, v: it.v, rest: it.rest, cls: cls }], width: 170, startX: 82, gap: 40, play: false, scale: 2.5, aria: "Figura da riconoscere" });
   }
-  function keysOf() { return sess.track === "note" ? sess.L.letters : sess.L.vs; }
+  function keysOf() { return sess.track === "ascolto" ? sess.L.keys : sess.track === "note" ? sess.L.letters : sess.L.vs; }
+  var DIREZIONI = [["↗", "Sale"], ["↘", "Scende"], ["=", "Uguale"]];
   function pianoMode() { return sess && sess.track === "note" && S.set.mode === "tastiera"; }
   function renderAnswers() {
     var keys = keysOf(), box = $("#answers");
     box.classList.toggle("values", sess.track === "valori");
+    box.classList.toggle("dir", sess.track === "ascolto");
     box.style.setProperty("--cols", sess.track === "note" ? Math.min(keys.length, 4) : Math.min(keys.length, 3));
     box.innerHTML = keys.map(function (k) {
-      var inner = sess.track === "note" ? LN.nm(k) : LN.VALUES[k].name + "<small>" + LN.VALUES[k].frac + "</small>";
+      var inner = sess.track === "ascolto" ? '<span class="dir-ic" aria-hidden="true">' + DIREZIONI[k][0] + "</span>" + DIREZIONI[k][1]
+        : sess.track === "note" ? LN.nm(k) : LN.VALUES[k].name + "<small>" + LN.VALUES[k].frac + "</small>";
       return '<button class="ans" data-k="' + k + '" id="ans-' + k + '">' + inner + "</button>";
     }).join("");
     var kb = pianoMode();
@@ -271,6 +291,7 @@
     $("#hint").innerHTML = kb ? "Tocca il tasto giusto sulla tastiera." :
       'Tasti rapidi: <span class="kbd">1</span>–<span class="kbd">' + keys.length + "</span>" +
       (sess.track === "note" ? ' oppure <span class="kbd">' + keys.map(function (l) { return LN.EN[l]; }).join(" ") + "</span>" : "") +
+      (sess.track === "ascolto" ? ' oppure le frecce <span class="kbd">↑</span> <span class="kbd">↓</span> · <span class="kbd">Spazio</span> per riascoltare' : "") +
       ' · <span class="kbd">Invio</span> per continuare';
   }
   function renderPiano() {
@@ -285,6 +306,10 @@
     var p = $("#piano"); p.style.setProperty("--n", N); p.innerHTML = html;
   }
   function describe(it) {
+    if (sess.track === "ascolto") {
+      var da = "Da " + nomeAsc(it.a) + " a " + nomeAsc(it.b);
+      return it.b > it.a ? da + ": la seconda nota è più acuta, sale." : it.b < it.a ? da + ": la seconda nota è più grave, scende." : "È la stessa nota, " + nomeAsc(it.a) + ": resta uguale.";
+    }
     if (sess.track === "note") return "È " + LN.nm(it.d) + ".";
     var V = LN.VALUES[it.v];
     return (it.rest ? "È una pausa di " + V.name.toLowerCase() : "È una " + V.name.toLowerCase()) + ": vale " + V.frac + ".";
@@ -295,13 +320,17 @@
     sess.ms += performance.now() - sess.qStart;
     sess.i++;
     $("#pFill").style.width = (sess.i / sess.L.q * 100) + "%";
-    if (sess.track === "note") LN.suono.play(LN.midiOf(it.d), 0.9);
+    if (sess.track === "ascolto") { if (!ok) suonaCoppia(); }
+    else if (sess.track === "note") LN.suono.play(LN.midiOf(it.d), 0.9);
     else if (!it.rest) LN.suono.play(LN.midiOf(it.d), Math.min(LN.VALUES[it.v].beats * LN.BEAT, 3));
-    sess.esiti.push([sess.curKey, ok]);
     sess.fila = ok ? sess.fila + 1 : 0;
     sess.filaMax = Math.max(sess.filaMax, sess.fila);
     if (ok) sess.ok++;
-    else sess.misses[sess.curKey] = (sess.misses[sess.curKey] || 0) + 1;
+    // Gli errori d'ascolto non entrano nel ripasso, che è fatto di note e figure da leggere.
+    if (sess.track !== "ascolto") {
+      sess.esiti.push([sess.curKey, ok]);
+      if (!ok) sess.misses[sess.curKey] = (sess.misses[sess.curKey] || 0) + 1;
+    }
     drawStage(ok ? "ok" : "bad");
     var sh = $("#sheet");
     sh.className = "sheet " + (ok ? "ok" : "bad");
@@ -315,7 +344,9 @@
   }
   function answer(k) {
     if (!sess || sess.locked) return;
-    var it = sess.cur, right = sess.track === "note" ? it.d % 7 : it.v, ok = k === right;
+    var it = sess.cur, ok;
+    var right = sess.track === "ascolto" ? (it.b > it.a ? 0 : it.b < it.a ? 1 : 2) : sess.track === "note" ? it.d % 7 : it.v;
+    ok = k === right;
     var b = $("#ans-" + k); if (b) b.classList.add(ok ? "ok" : "bad");
     if (!ok) { var c = $("#ans-" + right); if (c) c.classList.add("ok"); }
     grade(ok);
@@ -328,12 +359,21 @@
     grade(ok);
   }
   $("#answers").addEventListener("click", function (e) { var b = e.target.closest(".ans"); if (b) answer(+b.dataset.k); });
+  $("#stage").addEventListener("click", function (e) {
+    if (e.target.closest("#riascolta")) { suonaCoppia(); return; }
+    var g = e.target.closest(".asc-dopo g.n[data-midi]"); if (g) LN.suono.play(+g.dataset.midi, 0.8);
+  });
   $("#piano").addEventListener("click", function (e) { var b = e.target.closest("[data-midi]"); if (b) answerKey(b); });
   $("#sheetBtn").addEventListener("click", next);
   document.addEventListener("keydown", function (e) {
     if (!sess || $("#v-sessione").hidden || e.ctrlKey || e.metaKey || e.altKey || !$("#exitModal").hidden) return;
     if (e.key === "Enter" && !$("#sheet").hidden) { e.preventDefault(); next(); return; }
     if (sess.locked || pianoMode()) return;
+    if (sess.track === "ascolto") {
+      if (e.key === " ") { e.preventDefault(); suonaCoppia(); return; }
+      if (e.key === "ArrowUp") { e.preventDefault(); answer(0); return; }
+      if (e.key === "ArrowDown") { e.preventDefault(); answer(1); return; }
+    }
     var keys = keysOf(), k = e.key.toLowerCase(), num = parseInt(k, 10);
     if (num >= 1 && num <= keys.length) { e.preventDefault(); answer(keys[num - 1]); return; }
     var map = { c: 0, d: 1, e: 2, f: 3, g: 4, a: 5, b: 6 };
