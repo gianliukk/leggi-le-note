@@ -101,7 +101,7 @@ window.LN = window.LN || {};
       '<div id="dEsito"></div></div></div>' +
 
       '<div class="card"><div class="card-head"><h2>Nuovo anno scolastico</h2></div><div class="pad grid-gap">' +
-      '<p class="muted">A settembre sposta tutti gli studenti nella classe successiva: 1AF diventa 2AF, 2BF diventa 3BF. Chi era in terza passa tra gli «Ex studenti»: conserva account e progressi, ma esce dalla lega e dalla sezione Classe. Le classi nuove vengono create in automatico. Per un singolo studente usa invece il menu Classe nella tabella.</p>' +
+      '<p class="muted">A settembre sposta tutti gli studenti nella classe successiva: 1AF diventa 2AF, 2BF diventa 3BF. Chi era in terza passa tra gli «Ex studenti»: conserva account e progressi, esce dalla lega della settimana e dall'elenco dei compagni, ma resta nella classifica di sempre con tutti i suoi XP. Le classi nuove vengono create in automatico. Per un singolo studente usa invece il menu Classe nella tabella.</p>' +
       '<div class="btn-row"><button class="btn3d' + (armato === "*anno" ? " go-bad" : "") + '" id="dAnno">' + (armato === "*anno" ? "Confermi il passaggio d'anno per tutti?" : "Passaggio d'anno") + "</button>" +
       (armato === "*anno" ? '<button class="btn-plain" data-undel="1">Annulla</button>' : "") + "</div></div></div>";
     renderEsito();

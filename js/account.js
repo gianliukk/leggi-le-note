@@ -103,6 +103,16 @@ window.LN = window.LN || {};
       return r.data || [];
     },
 
+    /* Classifica di sempre: XP totali, dell'anno scolastico e anno per anno. */
+    storico: async function () {
+      var r = await client.rpc("storico");
+      if (r.error) {
+        if (/storico/.test(r.error.message || "") && /function|find/i.test(r.error.message || "")) throw new Error("La classifica di sempre non è ancora attiva: il docente deve eseguire lo script 07_storico.sql in Supabase.");
+        throw new Error(traduci(r.error));
+      }
+      return r.data || [];
+    },
+
     /* ---------- Docente ---------- */
     creaDocente: async function (email, password) {
       var r = await client.auth.signUp({ email: email.trim().toLowerCase(), password: password });

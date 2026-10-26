@@ -19,13 +19,94 @@ window.LN = window.LN || {};
     return d === 0 ? 1 : 8 - d;
   }
 
+  var TROFEO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v3h3v2a4 4 0 0 1-4 4h-.4A5 5 0 0 1 13 14.9V18h3v3H8v-3h3v-3.1A5 5 0 0 1 8.4 12H8a4 4 0 0 1-4-4V6h3zm-1 5a2 2 0 0 0 1 1.7V8zm12 0h-1v1.7A2 2 0 0 0 18 8z" fill="currentColor"/></svg>';
+
   var filtro = "tutti", dati = [];
+  var modo = "settimana", storico = null, erroreStorico = "", aperto = null;
+
+  function annoScolastico() {
+    var d = new Date(), a = d.getMonth() >= 8 ? d.getFullYear() : d.getFullYear() - 1;
+    return a + "/" + String((a + 1) % 100).padStart(2, "0");
+  }
+  function data(s) {
+    if (!s) return "";
+    var p = String(s).split("-");
+    return p[2] + "/" + p[1] + "/" + p[0];
+  }
+  function num(n) { return Number(n || 0).toLocaleString("it-IT"); }
 
   async function carica() {
     var box = $("#classe");
     box.innerHTML = '<p class="muted">Caricamento della classe…</p>';
-    try { dati = await A.compagni(); render(); }
+    try { dati = await A.compagni(); storico = null; render(); if (modo !== "settimana") caricaStorico(); }
     catch (e) { box.innerHTML = '<p class="err">' + esc(e.message) + "</p>"; }
+  }
+
+  async function caricaStorico() {
+    erroreStorico = "";
+    try { storico = await A.storico(); }
+    catch (e) { storico = null; erroreStorico = e.message; }
+    render();
+  }
+
+  function riga(r, pos, xp, isMe, extra) {
+    return '<span class="pos' + (pos <= 3 && xp > 0 ? " m" + pos : "") + '">' + pos + "</span>" + avatar(r.username) +
+      '<span class="lega-nome"><b>' + esc(r.username) + "</b>" + (isMe ? ' <span class="tu">tu</span>' : "") + "<small>" + esc(r.classe || "") + "</small></span>" +
+      '<span class="lega-xp"><span class="gem">' + GEM + "</span>" + num(xp) + " XP" + (extra || "") + "</span>";
+  }
+
+  function legaSettimana(me, g) {
+    var lega = dati.slice().sort(function (a, b) { return b.xp_settimana - a.xp_settimana || a.username.localeCompare(b.username); });
+    var html = '<div class="head-block"><div class="eyebrow">Lega della settimana</div><h1>Chi suona di più?</h1>' +
+      '<p class="muted">Conta gli XP guadagnati da lunedì. Domenica a mezzanotte la lega si chiude e lunedì si riparte tutti da zero.</p>' +
+      '<span class="lega-chip">' + (g === 1 ? "Ultimo giorno: dai il massimo!" : "Mancano " + g + " giorni alla fine") + "</span></div>";
+    return html + '<ol class="lega">' + lega.map(function (r, i) {
+      var isMe = r.username === me;
+      return '<li class="lega-row' + (isMe ? " me" : "") + (r.xp_settimana === 0 ? " zero" : "") + '">' + riga(r, i + 1, r.xp_settimana, isMe) + "</li>";
+    }).join("") + "</ol>";
+  }
+
+  /* Classifica dell'anno scolastico o di sempre: non si azzera mai. Toccando un nome si apre il suo storico. */
+  function legaStorica(me) {
+    var sempre = modo === "sempre";
+    var html = '<div class="head-block"><div class="eyebrow">' + (sempre ? "Classifica di sempre" : "Anno scolastico " + annoScolastico()) + "</div>" +
+      "<h1>" + (sempre ? "Chi ha suonato di più?" : "Il campione dell'anno") + "</h1>" +
+      '<p class="muted">' + (sempre
+        ? "Tutti gli XP raccolti dal primo allenamento, anno dopo anno. Questa classifica non si azzera mai: ogni allenamento resta."
+        : "Gli XP raccolti dal 1° settembre. La classifica dell'anno riparte il 1° settembre, ma i punti restano nella classifica di sempre.") +
+      " Tocca un nome per vedere il suo storico.</p></div>";
+    if (erroreStorico) return html + '<p class="err">' + esc(erroreStorico) + "</p>";
+    if (!storico) return html + '<p class="muted">Caricamento della classifica…</p>';
+
+    var campo = sempre ? "xp_totale" : "xp_anno";
+    var lista = storico.filter(function (r) { return sempre || r.classe !== "Ex studenti" || r[campo] > 0; })
+      .sort(function (a, b) { return b[campo] - a[campo] || a.username.localeCompare(b.username); });
+    if (!lista.length) return html + '<p class="muted">Nessuno studente ancora registrato.</p>';
+
+    return html + '<ol class="lega">' + lista.map(function (r, i) {
+      var isMe = r.username === me, open = aperto === r.username, xp = Number(r[campo]);
+      var coppe = r.settimane_vinte > 0 ? '<span class="coppe" title="Settimane vinte">' + TROFEO + r.settimane_vinte + "</span>" : "";
+      return '<li class="lega-item' + (isMe ? " me" : "") + (xp === 0 ? " zero" : "") + '">' +
+        '<button class="lega-row lega-btn" data-storico="' + esc(r.username) + '" aria-expanded="' + open + '">' + riga(r, i + 1, xp, isMe, coppe) + "</button>" +
+        (open ? dettaglio(r) : "") + "</li>";
+    }).join("") + "</ol>";
+  }
+
+  function dettaglio(r) {
+    if (!r.tappe) return '<div class="storico"><p class="muted">Non ha ancora giocato nessuna tappa.</p></div>';
+    var anni = r.anni || [], max = Math.max.apply(null, anni.map(function (a) { return a.xp; }).concat([1]));
+    return '<div class="storico">' +
+      '<div class="storico-num">' +
+        '<div><b>' + num(r.xp_totale) + "</b><span>XP di sempre</span></div>" +
+        '<div><b>' + num(r.giorni) + "</b><span>" + (r.giorni == 1 ? "giorno" : "giorni") + " di pratica</span></div>" +
+        '<div><b>' + num(r.tappe) + "</b><span>tappe giocate</span></div>" +
+        '<div><b>' + num(r.settimane_vinte) + "</b><span>" + (r.settimane_vinte == 1 ? "settimana vinta" : "settimane vinte") + "</span></div>" +
+        '<div><b>' + num(r.record_settimana) + "</b><span>record in una settimana</span></div>" +
+      "</div>" +
+      '<div class="storico-anni"><div class="eyebrow">Anno per anno</div>' + anni.map(function (a) {
+        return '<div class="anno-row"><span>' + esc(a.anno) + '</span><span class="anno-bar"><i style="width:' + Math.max(2, Math.round(a.xp / max * 100)) + '%"></i></span><b>' + num(a.xp) + " XP</b></div>";
+      }).join("") + "</div>" +
+      '<p class="muted small">Si allena con Leggi le note dal ' + data(r.dal) + ".</p></div>";
   }
 
   function render() {
@@ -33,18 +114,11 @@ window.LN = window.LN || {};
     var miaClasse = A.ruolo === "studente" ? A.profilo.classe : null;
     var g = giorniAllaFine();
 
-    var lega = dati.slice().sort(function (a, b) { return b.xp_settimana - a.xp_settimana || a.username.localeCompare(b.username); });
-    var html = '<div class="head-block"><div class="eyebrow">Lega della settimana</div><h1>Chi suona di più?</h1>' +
-      '<p class="muted">Conta gli XP guadagnati da lunedì. Domenica a mezzanotte la lega si chiude e lunedì si riparte tutti da zero.</p>' +
-      '<span class="lega-chip">' + (g === 1 ? "Ultimo giorno: dai il massimo!" : "Mancano " + g + " giorni alla fine") + "</span></div>";
-
-    html += '<ol class="lega">' + lega.map(function (r, i) {
-      var pos = i + 1, isMe = r.username === me;
-      return '<li class="lega-row' + (isMe ? " me" : "") + (r.xp_settimana === 0 ? " zero" : "") + '">' +
-        '<span class="pos' + (pos <= 3 && r.xp_settimana > 0 ? " m" + pos : "") + '">' + pos + "</span>" + avatar(r.username) +
-        '<span class="lega-nome"><b>' + esc(r.username) + "</b>" + (isMe ? ' <span class="tu">tu</span>' : "") + "<small>" + esc(r.classe || "") + "</small></span>" +
-        '<span class="lega-xp"><span class="gem">' + GEM + "</span>" + r.xp_settimana + " XP</span></li>";
-    }).join("") + "</ol>";
+    var html = '<div class="seg seg-lega" role="group" aria-label="Classifica">' +
+      [["settimana", "Settimana"], ["anno", "Anno scolastico"], ["sempre", "Di sempre"]].map(function (m) {
+        return '<button data-modo="' + m[0] + '" aria-pressed="' + (modo === m[0]) + '">' + m[1] + "</button>";
+      }).join("") + "</div>";
+    html += modo === "settimana" ? legaSettimana(me, g) : legaStorica(me);
 
     // Bonus continuità
     var serie = S.serieAttuale(), m = S.moltiplicatore(serie), next = S.prossimaSoglia(serie);
@@ -79,7 +153,15 @@ window.LN = window.LN || {};
 
   document.addEventListener("click", function (e) {
     var b = e.target.closest("[data-filtro]");
-    if (b && $("#classe").contains(b)) { filtro = b.dataset.filtro; render(); }
+    if (b && $("#classe").contains(b)) { filtro = b.dataset.filtro; render(); return; }
+    var m = e.target.closest("[data-modo]");
+    if (m && $("#classe").contains(m)) {
+      modo = m.dataset.modo; aperto = null; render();
+      if (modo !== "settimana" && !storico) caricaStorico();
+      return;
+    }
+    var s = e.target.closest("[data-storico]");
+    if (s && $("#classe").contains(s)) { aperto = aperto === s.dataset.storico ? null : s.dataset.storico; render(); }
   });
 
   LN.classe = { carica: carica };
