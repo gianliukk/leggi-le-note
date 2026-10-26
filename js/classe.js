@@ -187,6 +187,9 @@ window.LN = window.LN || {};
       }).join("") + "</div>" +
       (me ? '<p class="bonus-me">' + (serie ? "La tua serie: <b>" + serie + (serie === 1 ? " giorno" : " giorni") + "</b>" + (m > 1 ? ", bonus attuale <b>XP " + molt(m) + "</b>" : "") + "." : "Oggi non hai ancora giocato: fai una tappa per accendere la fiamma.") +
         (next ? " Ancora " + next.mancano + (next.mancano === 1 ? " giorno" : " giorni") + " di fila per XP " + molt(next.molt) + "." : " Hai il bonus massimo: continua così!") + "</p>" : "") +
+      '<div class="corone-box"><span class="corona-grande" aria-hidden="true">\u{1D110}</span><div><b>Le corone</b>' +
+      "<p class=\"muted\">Sul pentagramma la corona allunga una nota; qui allunga la serie. Ogni " + S.CORONA_OGNI + " giorni di fila ne guadagni una (al massimo " + S.CORONE_MAX + "): se salti un giorno, una corona tiene viva la serie.</p>" +
+      (me ? "<p>Le tue corone: <b>" + S.corone() + " su " + S.CORONE_MAX + "</b>.</p>" : "") + "</div></div>" +
       "</div>";
 
     // Compagni

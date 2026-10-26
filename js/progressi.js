@@ -63,8 +63,30 @@ window.LN = window.LN || {};
     },
     sbloccata: function (i) { return S.impostazioni.unlockAll || i <= this.corrente(); },
 
+    /* Corone (𝄐): una ogni CORONA_OGNI giorni di fila, al massimo CORONE_MAX.
+       Ogni giorno saltato ne consuma una e la serie resta viva (senza crescere). */
+    CORONA_OGNI: 7,
+    CORONE_MAX: 2,
+    corone: function () { return S.corone || 0; },
+    usaCorone: function () {
+      if (!S.ultimoGiorno || !S.serie) return;
+      var p = S.ultimoGiorno.split("-"), ultimo = new Date(+p[0], p[1] - 1, +p[2]);
+      var oggi = new Date(); oggi.setHours(0, 0, 0, 0);
+      var saltati = Math.round((oggi - ultimo) / 86400000) - 1;
+      if (saltati < 1 || saltati > this.corone()) return;
+      S.corone = this.corone() - saltati;
+      S.ultimoGiorno = ieri();
+      S.coroneUsate = { giorno: giorno(), n: saltati, serie: S.serie };
+      salva();
+    },
+    /* { n giorni salvati, serie } se oggi una corona ha salvato la serie, altrimenti null */
+    coroneUsateOggi: function () {
+      return S.coroneUsate && S.coroneUsate.giorno === giorno() ? S.coroneUsate : null;
+    },
+
     /* La serie è "viva" se l'ultimo allenamento è di oggi o di ieri. */
     serieAttuale: function () {
+      this.usaCorone();
       if (S.ultimoGiorno === giorno() || S.ultimoGiorno === ieri()) return S.serie;
       return 0;
     },
@@ -144,11 +166,13 @@ window.LN = window.LN || {};
         : { score: prev.score, stars: Math.max(stelle, prev.stars), ms: prev.ms };
 
       // Prima si aggiorna la serie: il bonus vale già dal giorno in cui si raggiunge la soglia.
-      var oggi = giorno(), serieSu = false;
+      this.usaCorone();
+      var oggi = giorno(), serieSu = false, coronaNuova = false;
       if (S.ultimoGiorno !== oggi) {
         S.serie = S.ultimoGiorno === ieri() ? S.serie + 1 : 1;
         S.ultimoGiorno = oggi;
         serieSu = true;
+        if (S.serie % this.CORONA_OGNI === 0 && this.corone() < this.CORONE_MAX) { S.corone = this.corone() + 1; coronaNuova = true; }
       }
       var base = esatte + 5 + (esatte === totale ? 5 : 0);
       var molt = this.moltiplicatore(S.serie);
@@ -156,7 +180,7 @@ window.LN = window.LN || {};
       var xp = carica ? Math.round(base * molt) : 0;
       S.xp += xp;
       salva();
-      return { stelle: stelle, xp: xp, base: base, molt: molt, senzaEnergia: !carica, record: migliore, serie: S.serie, serieSu: serieSu, sblocco: this.corrente() > prima };
+      return { stelle: stelle, xp: xp, base: base, molt: molt, senzaEnergia: !carica, record: migliore, serie: S.serie, serieSu: serieSu, coronaNuova: coronaNuova, sblocco: this.corrente() > prima };
     },
 
     /* Energia: 5 cariche, una per tappa; se ne ricarica una ogni 30 minuti.

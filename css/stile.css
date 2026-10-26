@@ -124,6 +124,13 @@ body.in-sessione .top { display: none; }
 .start-tip { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); background: var(--surface); border: 2px solid var(--line); border-radius: 12px; padding: 6px 12px; font-weight: 800; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--u, var(--ink)); white-space: nowrap; animation: bob 1.6s ease-in-out infinite; }
 .start-tip::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -7px; border: 7px solid transparent; border-top-color: var(--line); }
 @keyframes bob { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, -5px); } }
+.chip-corona { font-family: var(--music); color: var(--gem); margin-left: 6px; font-weight: 700; font-size: 1.5em; line-height: 0.6; position: relative; top: 0.12em; }
+.corona-ic, .corona-grande { font-family: var(--music); color: var(--gem); line-height: 1; }
+.corona-line { display: flex; gap: 8px; align-items: center; background: var(--soft); border-radius: 12px; padding: 8px 12px; font-weight: 700; color: var(--ink); max-width: 460px; text-align: left; }
+.corona-line .corona-ic { font-size: 2.6rem; line-height: 0.8; }
+.corone-box { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 10px; align-items: start; border-top: 2px solid var(--line); padding-top: 12px; }
+.corona-grande { font-size: 3.4rem; line-height: 0.9; text-align: center; }
+.corone-box p { font-size: 0.95rem; }
 .missioni { margin-top: 18px; background: var(--surface); border: 2px solid var(--line); border-radius: 18px; padding: 16px; display: grid; gap: 12px; }
 .miss-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .miss-head h2 { font-size: 1.25rem; font-weight: 800; }

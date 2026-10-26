@@ -32,7 +32,10 @@
   /* ---------- Barra superiore ---------- */
   function updateChips() {
     var c = $("#chipSerie");
-    c.innerHTML = ICON.flame + "<span>" + S.serieAttuale() + "</span>";
+    var cor = S.corone();
+    c.innerHTML = ICON.flame + "<span>" + S.serieAttuale() + "</span>" +
+      (cor ? '<span class="chip-corona" aria-label="' + cor + (cor === 1 ? " corona" : " corone") + '">\u{1D110}' + (cor > 1 ? cor : "") + "</span>" : "");
+    c.title = "Giorni di fila con almeno un allenamento" + (cor ? ". Corone: " + cor + " (salvano la serie se salti un giorno)" : "");
     c.style.color = S.oggiFatto() ? "var(--flame)" : "";
     c.classList.toggle("spenta", !S.oggiFatto());
     $("#chipXp").innerHTML = '<span style="color:var(--gem);display:inline-flex">' + ICON.gem + "</span><span>" + S.state.xp + "</span>";
@@ -58,6 +61,15 @@
     return t ? '<p class="bonus-line">' + t + "</p>" : "";
   }
 
+  function avvisoCorone() {
+    S.serieAttuale();
+    var u = S.coroneUsateOggi();
+    if (!u) return "";
+    return '<p class="corona-line"><span class="corona-ic">\u{1D110}</span>' +
+      (u.n === 1 ? "Hai saltato un giorno, ma una corona" : "Hai saltato " + u.n + " giorni, ma " + u.n + " corone") +
+      " " + (u.n === 1 ? "ha" : "hanno") + " salvato la tua serie di " + u.serie + " giorni. Allenati oggi per farla crescere!</p>";
+  }
+
   /* ---------- Percorso ---------- */
   var OFFSETS = [0, 56, 84, 56, 0, -56, -84, -56];
   function renderPercorso() {
@@ -70,7 +82,7 @@
       hero = LN.gufo(primo ? "ciao" : "felice") + '<div class="bubble">' +
         (primo
           ? "<h1>Ciao" + chi + "! Sono il prof. Marano.</h1><p>Ti accompagno tappa dopo tappa a leggere la musica. Si comincia dalle prime tre note.</p>"
-          : "<h1>Ciao di nuovo" + chi + "!</h1><p>Prossima tappa: <strong>" + t.L.title + "</strong>." + (S.oggiFatto() ? " Oggi la serie è già salva." : " Allenati oggi per tenere viva la serie.") + "</p>" + bonusHint(S.serieAttuale()) + energiaHint()) +
+          : "<h1>Ciao di nuovo" + chi + "!</h1>" + avvisoCorone() + "<p>Prossima tappa: <strong>" + t.L.title + "</strong>." + (S.oggiFatto() ? " Oggi la serie è già salva." : " Allenati oggi per tenere viva la serie.") + "</p>" + bonusHint(S.serieAttuale()) + energiaHint()) +
         '<button class="btn3d primary" id="heroGo">' + (primo ? "Inizia" : "Continua") + "</button></div>";
     }
     $("#hero").innerHTML = hero;
@@ -385,6 +397,7 @@
       (res.serieSu ? '<p class="sub"><span style="color:var(--flame);display:inline-flex;width:20px;vertical-align:-4px">' + ICON.flame + "</span> <strong>Serie: " + res.serie + (res.serie === 1 ? " giorno" : " giorni di fila") + "</strong></p>" : "") +
       (res.senzaEnergia ? '<p class="energy-line">Energia finita: la tappa vale per stelle e serie, ma non per gli XP. La prossima carica arriva tra ' + minuti(S.energia().prossima) + ".</p>" :
        res.molt > 1 ? '<p class="bonus-line">Bonus continuità XP ×' + String(res.molt).replace(".", ",") + ": +" + (res.xp - res.base) + " XP extra!</p>" : bonusHint(res.serie)) +
+      (res.coronaNuova ? '<p class="corona-line"><span class="corona-ic">\u{1D110}</span>' + res.serie + " giorni di fila: hai guadagnato una corona! Se un giorno non riesci ad allenarti, salverà la tua serie.</p>" : "") +
       missioniHtml + review +
       '<div class="esito-actions"><button class="btn3d primary" id="goPath">Continua</button>' +
       (s.rip ? (restano ? '<button class="btn-plain" id="retry">Ripassa ancora</button>' : "") : '<button class="btn-plain" id="retry">Rifai la tappa</button>') + "</div></div>";
