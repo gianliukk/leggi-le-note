@@ -154,6 +154,18 @@ window.LN = window.LN || {};
       return { nuove: nuove, bonus: bonus, tutte: tutte };
     },
 
+    /* Contatori per le medaglie (vedi medaglie.js). r: { fila, perfetta, ripasso, tutteMissioni } */
+    aggiornaStat: function (r) {
+      var st = S.stat = S.stat || {};
+      st.tappe = (st.tappe || 0) + 1;
+      if (r.perfetta) st.perfette = (st.perfette || 0) + 1;
+      if (r.ripasso) st.ripassi = (st.ripassi || 0) + 1;
+      if (r.tutteMissioni) st.giorniMissioni = (st.giorniMissioni || 0) + 1;
+      st.filaMax = Math.max(st.filaMax || 0, r.fila);
+      st.serieMax = Math.max(st.serieMax || 0, S.serie);
+      salva();
+    },
+
     /* soloXp: per il ripasso, che dà XP e serie ma non è una tappa del percorso (niente stelle salvate). */
     registra: function (key, esatte, totale, ms, soloXp) {
       var pct = esatte / totale;

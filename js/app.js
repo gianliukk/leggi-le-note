@@ -73,6 +73,7 @@
   /* ---------- Percorso ---------- */
   var OFFSETS = [0, 56, 84, 56, 0, -56, -84, -56];
   function renderPercorso() {
+    LN.medaglie.controlla(); // assegna senza annuncio quelle già meritate (per esempio prima dell'arrivo delle medaglie)
     var cur = S.corrente(), tot = LN.TAPPE.length, hero;
     if (cur >= tot) {
       hero = LN.gufo("festa") + '<div class="bubble"><h1>Percorso completato!</h1><p>Hai superato tutte le tappe. Ora puoi tornare indietro e battere i tuoi record.</p></div>';
@@ -362,6 +363,11 @@
     var xpRiga = Math.min(100, res.xp + mis.bonus);
     if (res.xp + mis.bonus > xpRiga) { S.state.xp -= res.xp + mis.bonus - xpRiga; S.salva(); }
     LN.account.registraSessione(s.T.key, s.ok, q, s.ms, xpRiga);
+    S.aggiornaStat({ fila: s.filaMax, perfetta: s.ok === q, ripasso: s.rip, tutteMissioni: mis.tutte });
+    var medNuove = LN.medaglie.controlla();
+    var medaglieHtml = medNuove.length ? '<div class="med-nuove">' + medNuove.map(function (m) {
+      return '<div class="med-nuova">' + LN.medaglie.icona(m, true) + "<div><small>Nuova medaglia!</small><b>" + m.nome + "</b><span>" + m.descr + "</span></div></div>";
+    }).join("") + "</div>" : "";
     var missioniHtml = mis.nuove.length ? '<div class="miss-fatte">' + mis.nuove.map(function (x) {
       return '<p><span class="miss-ic">' + ICON.check + "</span>Missione completata: " + testoMissione(x).toLowerCase() + " <b>+" + S.MISSIONE_XP + " XP</b></p>";
     }).join("") + (mis.tutte ? '<p class="miss-tutte">Tutte le missioni di oggi completate: energia ricaricata al massimo!</p>' : "") + "</div>" : "";
@@ -398,7 +404,7 @@
       (res.senzaEnergia ? '<p class="energy-line">Energia finita: la tappa vale per stelle e serie, ma non per gli XP. La prossima carica arriva tra ' + minuti(S.energia().prossima) + ".</p>" :
        res.molt > 1 ? '<p class="bonus-line">Bonus continuità XP ×' + String(res.molt).replace(".", ",") + ": +" + (res.xp - res.base) + " XP extra!</p>" : bonusHint(res.serie)) +
       (res.coronaNuova ? '<p class="corona-line"><span class="corona-ic">\u{1D110}</span>' + res.serie + " giorni di fila: hai guadagnato una corona! Se un giorno non riesci ad allenarti, salverà la tua serie.</p>" : "") +
-      missioniHtml + review +
+      medaglieHtml + missioniHtml + review +
       '<div class="esito-actions"><button class="btn3d primary" id="goPath">Continua</button>' +
       (s.rip ? (restano ? '<button class="btn-plain" id="retry">Ripassa ancora</button>' : "") : '<button class="btn-plain" id="retry">Rifai la tappa</button>') + "</div></div>";
     var gi = s.gi;
@@ -449,6 +455,19 @@
       return '<button data-set="' + name + '" data-val="' + o[0] + '" aria-pressed="' + (String(val) === String(o[0])) + '">' + o[1] + "</button>";
     }).join("") + "</div>";
   }
+  function sezioneMedaglie() {
+    LN.medaglie.controlla();
+    var el = LN.medaglie.elenco(), prese = el.filter(function (x) { return x.data; }).length;
+    function data(s) { var p = s.split("-"); return p[2] + "/" + p[1] + "/" + p[0]; }
+    return '<div class="medaglie-sez"><div class="miss-head"><h2>Medaglie</h2><span class="miss-conta">' + prese + "/" + el.length + "</span></div>" +
+      '<div class="med-grid">' + el.map(function (x) {
+        return '<div class="med' + (x.data ? " presa" : "") + '">' + LN.medaglie.icona(x.m, !!x.data) +
+          "<b>" + x.m.nome + "</b><span>" + x.m.descr + "</span>" +
+          (x.data ? "<small>Presa il " + data(x.data) + "</small>"
+            : x.m.n > 1 ? '<span class="miss-bar" aria-label="' + x.val + " su " + x.m.n + '"><i style="width:' + Math.round(x.val / x.m.n * 100) + '%"></i></span><small>' + x.val + "/" + x.m.n + "</small>" : "") +
+          "</div>";
+      }).join("") + "</div></div>";
+  }
   function renderProfilo() {
     var done = LN.TAPPE.filter(function (t) { return S.completata(t.key); }).length;
     var stars = LN.TAPPE.reduce(function (a, t) { return a + S.best(t.key).stars; }, 0);
@@ -464,6 +483,7 @@
       '<div class="ptile"><span style="color:var(--gem)">' + ICON.gem + "</span><b>" + S.state.xp + "</b><span>XP totali</span></div>" +
       '<div class="ptile"><span style="color:var(--ok)">' + ICON.check + "</span><b>" + done + "/" + LN.TAPPE.length + "</b><span>Tappe superate</span></div>" +
       '<div class="ptile"><span style="color:var(--accent)">' + ICON.star + "</span><b>" + stars + "/" + LN.TAPPE.length * 3 + "</b><span>Stelle</span></div></div>" +
+      sezioneMedaglie() +
       '<div class="settings"><h2>Impostazioni</h2>' +
       '<div class="set-row"><span class="lbl">Nomi delle note</span>' + seg("names", [["it", "Do Re Mi"], ["en", "C D E"]], S.set.names) + "</div>" +
       '<div class="set-row"><span class="lbl">Suono del clarinetto</span>' + seg("sound", [["true", "Sì"], ["false", "No"]], S.set.sound) + "</div>" +

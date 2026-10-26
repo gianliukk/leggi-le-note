@@ -124,6 +124,25 @@ body.in-sessione .top { display: none; }
 .start-tip { position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); background: var(--surface); border: 2px solid var(--line); border-radius: 12px; padding: 6px 12px; font-weight: 800; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--u, var(--ink)); white-space: nowrap; animation: bob 1.6s ease-in-out infinite; }
 .start-tip::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -7px; border: 7px solid transparent; border-top-color: var(--line); }
 @keyframes bob { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, -5px); } }
+/* Medaglie */
+.medaglia { --mc: var(--u0); flex: none; display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: var(--mc); box-shadow: 0 4px 0 rgb(0 0 0 / 0.22), inset 0 0 0 4px rgb(255 255 255 / 0.28); color: #FFFFFF; }
+.medaglia span { font-family: var(--music); font-size: calc(1.9rem * var(--ms, 1)); line-height: 1; transform: translateY(calc(-0.06em + var(--my, 0em))); white-space: nowrap; }
+.medaglia.spenta { background: var(--locked); color: var(--locked-ink); box-shadow: inset 0 0 0 4px var(--locked-shade); }
+.medaglie-sez { margin: 22px 0; display: grid; gap: 12px; }
+.medaglie-sez h2 { font-size: 1.3rem; }
+.med-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.med { background: var(--surface); border: 2px solid var(--line); border-radius: 16px; padding: 14px 10px 12px; display: grid; justify-items: center; align-content: start; gap: 4px; text-align: center; }
+.med b { font-family: var(--display); font-weight: 800; line-height: 1.2; margin-top: 6px; }
+.med > span:not(.medaglia):not(.miss-bar) { color: var(--muted); font-size: 0.82rem; line-height: 1.3; }
+.med small { color: var(--muted); font-size: 0.75rem; font-weight: 700; }
+.med.presa small { color: var(--ok-shade); }
+.med .miss-bar { width: 80%; margin-top: 4px; }
+.med-nuove { display: grid; gap: 8px; width: 100%; max-width: 460px; }
+.med-nuova { display: flex; align-items: center; gap: 14px; text-align: left; background: var(--surface); border: 2px solid var(--accent); border-radius: 16px; padding: 12px 14px; }
+.med-nuova div { display: grid; }
+.med-nuova small { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent-shade); }
+.med-nuova b { font-family: var(--display); font-size: 1.15rem; }
+.med-nuova span:not(.medaglia):not(.medaglia span) { color: var(--muted); font-size: 0.9rem; }
 .chip-corona { font-family: var(--music); color: var(--gem); margin-left: 6px; font-weight: 700; font-size: 1.5em; line-height: 0.6; position: relative; top: 0.12em; }
 .corona-ic, .corona-grande { font-family: var(--music); color: var(--gem); line-height: 1; }
 .corona-line { display: flex; gap: 8px; align-items: center; background: var(--soft); border-radius: 12px; padding: 8px 12px; font-weight: 700; color: var(--ink); max-width: 460px; text-align: left; }
