@@ -260,6 +260,40 @@ body.in-sessione .top { display: none; }
 .asc-btn:active { transform: translateY(5px); box-shadow: 0 2px 0 #2A6DB5; }
 .asc-btn svg { width: 56px; height: 56px; }
 .asc-dopo { display: grid; justify-items: center; }
+
+/* Ritmo */
+.rit, .rit-dopo { position: relative; display: grid; justify-items: center; width: 100%; }
+.stage .staff.ritmo-svg { max-width: 620px; }
+.fig-ritmo { justify-items: stretch; }
+.fig-ritmo .ritmo-svg { width: min(100%, 460px); }
+.ritmo-svg { width: min(100%, 620px); height: auto; overflow: visible; }
+.ritmo-svg .trave { fill: var(--staff); }
+.ritmo-svg .conta { fill: var(--muted); font-family: var(--display); font-weight: 800; font-size: 12px; }
+.ritmo-svg .conta.e { font-weight: 700; font-style: italic; }
+.ritmo-svg .testina { stroke: var(--gem); stroke-width: 3; stroke-linecap: round; }
+.ritmo-svg .linea-t { stroke: var(--line-strong); stroke-width: 1.5; }
+.ritmo-svg .atteso { fill: none; stroke: var(--muted); stroke-width: 2; }
+.ritmo-svg .atteso.mancato { stroke: var(--bad); stroke-dasharray: 3 2; }
+.ritmo-svg .colpo.ok { fill: var(--ok); }
+.ritmo-svg .colpo.bad { fill: var(--bad); }
+.conta-grande { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; font-family: var(--display); font-weight: 800; font-size: 4rem; color: var(--gem); text-shadow: 0 2px 0 var(--surface), 0 0 12px var(--surface); }
+.conta-grande:empty { display: none; }
+.conta-grande.batti { animation: batti 0.35s ease-out; }
+@keyframes batti { from { transform: scale(1.35); opacity: 0.4; } to { transform: scale(1); opacity: 1; } }
+.rit-legenda { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; font-size: 0.82rem; color: var(--muted); margin-top: 4px; }
+.rit-legenda span { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: -9px; vertical-align: -1px; }
+.lg-att { border: 2px solid var(--muted); }
+.lg-ok { background: var(--ok); }
+.lg-bad { background: var(--bad); }
+.answers.rit-box { grid-template-columns: 1fr; }
+.rit-ctl { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.rit-ctl .btn3d { display: inline-flex; justify-content: center; align-items: center; gap: 6px; }
+.rit-ctl .btn3d svg { width: 20px; height: 20px; }
+.rit-ctl .btn3d:disabled { opacity: 0.5; }
+.tap-pad { min-height: 120px; border-radius: 22px; border: 3px solid var(--line); border-bottom-width: 8px; background: var(--surface); font-family: var(--display); font-weight: 800; font-size: 1.5rem; color: var(--muted); touch-action: manipulation; user-select: none; -webkit-user-select: none; cursor: pointer; }
+.tap-pad.attivo { border-color: var(--gem); color: var(--gem); }
+.tap-pad.colpito { animation: colpito 0.12s ease-out; }
+@keyframes colpito { from { transform: translateY(5px); border-bottom-width: 3px; background: var(--soft); } to { transform: none; } }
 .hint { font-size: 0.82rem; color: var(--muted); text-align: center; }
 .kbd { font-family: ui-monospace, Consolas, monospace; font-size: 0.78rem; background: var(--soft); border-radius: 4px; padding: 1px 5px; }
 .piano-wrap { overflow-x: auto; padding-bottom: 4px; }

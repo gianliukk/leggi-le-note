@@ -73,6 +73,25 @@ window.LN = window.LN || {};
       fig({ notes: named([31, 31]), gap: 48 }, "Fa e ancora Fa: la nota resta uguale"),
       "<p>Sul pentagramma succede la stessa cosa: se la seconda nota è scritta <strong>più in alto</strong>, il suono sale; se è scritta <strong>più in basso</strong>, il suono scende.</p>",
       '<p class="tip">Più le due note sono vicine, più è difficile sentire la differenza: ascolta con attenzione, anche più volte.</p>'
-    ]; } }
+    ]; } },
+    { t: "Il ritmo", quiz: false, body: function () {
+      // Battute di esempio: [figura o pausa, indice in LN.VALUES, posizione nella coppia di crome]
+      function bt(lista) {
+        var pos = 0;
+        return lista.map(function (x) { var e = { v: x[1], rest: x[0] === "p", b: LN.VALUES[x[1]].beats, start: pos, trave: x[2] == null ? null : x[2] }; pos += e.b; return e; });
+      }
+      function es(lista, caption) { return '<figure class="fig fig-ritmo">' + LN.ritmo.svg(bt(lista)) + "<figcaption>" + caption + "</figcaption></figure>"; }
+      return [
+        "<p>La musica ha un battito regolare, come il cuore: si chiama <strong>pulsazione</strong>. Il <strong>metronomo</strong> la fa sentire con un colpo a ogni tempo.</p>",
+        "<p>Nel tempo di <strong>4/4</strong> ogni battuta contiene quattro tempi: si conta <strong>1, 2, 3, 4</strong>. La semiminima dura un tempo, la minima due, la semibreve tutti e quattro.</p>",
+        es([["f", 2], ["f", 2], ["f", 2], ["f", 2]], "Quattro semiminime: un colpo su ogni tempo"),
+        es([["f", 1], ["f", 2], ["f", 2]], "Una minima e due semiminime: sulla minima si batte una volta sola e si aspetta il 3"),
+        "<p>Le <strong>crome</strong> sono due per ogni tempo: si conta <strong>1 e 2 e…</strong> e si batte su tutte e due.</p>",
+        es([["f", 2], ["f", 3, 0], ["f", 3, 1], ["f", 2], ["f", 2]], "Sulle due crome unite si batte «2 e»"),
+        "<p>Sulle <strong>pause</strong> non si batte: si conta in silenzio.</p>",
+        es([["f", 2], ["p", 2], ["f", 2], ["p", 2]], "Si batte sull'1 e sul 3; sul 2 e sul 4 si conta in silenzio"),
+        '<p class="tip">Negli esercizi premi <strong>Ascolta</strong> per sentire il ritmo dal clarinetto, poi <strong>Inizia</strong>: dopo quattro colpi di metronomo batti sul pulsante grande o con la barra spaziatrice.</p>'
+      ];
+    } }
   ];
 })(window.LN);

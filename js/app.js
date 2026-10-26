@@ -11,6 +11,7 @@
     note: '<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="9" cy="17" rx="5.2" ry="3.7" transform="rotate(-20 9 17)" fill="currentColor"/><rect x="12.7" y="3" width="2.3" height="14" fill="currentColor"/></svg>',
     valori: '<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="8" cy="18" rx="5" ry="3.6" transform="rotate(-20 8 18)" fill="currentColor"/><rect x="11.4" y="3" width="2.3" height="15" fill="currentColor"/><path d="M13.7 3 C14 6.5 20 7.5 18.6 13 C18 10 16 8.8 13.7 8.6 Z" fill="currentColor"/></svg>',
     ascolto: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.6 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
+    ritmo: '<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="9" rx="8.5" ry="3.2" fill="currentColor"/><path d="M3.5 9v7c0 1.8 3.8 3.2 8.5 3.2s8.5-1.4 8.5-3.2V9c0 1.8-3.8 3.2-8.5 3.2S3.5 10.8 3.5 9z" fill="currentColor" opacity=".75"/><path d="M14 2.5 18.5 7M10 2.5 5.5 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
     lock: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10.5" rx="2.5" fill="currentColor"/><path d="M8.2 10.5V7.6a3.8 3.8 0 0 1 7.6 0v2.9" fill="none" stroke="currentColor" stroke-width="2.6"/></svg>',
     flame: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.5 2c.6 3.6 6.5 5.6 6.5 12a7 7 0 0 1-14 0c0-3.2 1.9-5.4 3.3-6.6.1 2 1 3.3 2.3 3.6C10.3 7.6 10.8 4.6 12.5 2z" fill="currentColor"/></svg>',
     gem: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3h11l4.5 6.2L12 21 2 9.2z" fill="currentColor"/><path d="M2 9.2h20M8.5 9.2 12 21l3.5-11.8" stroke="#FFFFFF" stroke-opacity=".45" stroke-width="1.2" fill="none"/></svg>',
@@ -109,7 +110,7 @@
       });
       html += "</div></section>";
     });
-    html += '<p class="path-end">Nuove unità in arrivo: ritmo e diteggiatura del clarinetto.</p>';
+    html += '<p class="path-end">Nuova unità in arrivo: la diteggiatura del clarinetto.</p>';
     $("#path").innerHTML = cartaMissioni() + cartaRipasso() + html;
     updateChips();
   }
@@ -129,11 +130,13 @@
 
   /* ---------- Ripasso degli errori ---------- */
   /* Chiavi come in progressi.js: "n30" nota, "f3" figura, "p3" pausa. */
-  function trackDi(it) { return it.a != null ? "ascolto" : it.v != null ? "valori" : "note"; }
+  function trackDi(it) { return it.r != null ? "ritmo" : it.a != null ? "ascolto" : it.v != null ? "valori" : "note"; }
   function chiave(it) {
     var t = trackDi(it);
-    return t === "ascolto" ? "a" + it.a + "-" + it.b : t === "note" ? "n" + it.d : (it.rest ? "p" : "f") + it.v;
+    return t === "ritmo" ? "r" : t === "ascolto" ? "a" + it.a + "-" + it.b : t === "note" ? "n" + it.d : (it.rest ? "p" : "f") + it.v;
   }
+  /* Solo la lettura di note e figure entra nel ripasso degli errori. */
+  function daLeggere(track) { return track === "note" || track === "valori"; }
   function daChiave(k) { return k[0] === "n" ? { d: +k.slice(1) } : { v: +k.slice(1), rest: k[0] === "p" }; }
   function nomeChiave(k) {
     var it = daChiave(k);
@@ -150,7 +153,7 @@
   /* Note e figure delle tappe già aperte: solo queste possono uscire nel ripasso. */
   function conosciute() {
     var set = {};
-    LN.TAPPE.forEach(function (T, i) { if (T.track !== "ascolto" && S.sbloccata(i)) T.L.items.forEach(function (it) { set[chiave(it)] = it; }); });
+    LN.TAPPE.forEach(function (T, i) { if (daLeggere(T.track) && S.sbloccata(i)) T.L.items.forEach(function (it) { set[chiave(it)] = it; }); });
     return set;
   }
   /* Una tappa di 10 domande: gli errori escono più spesso (quanto più "resta" da indovinare),
@@ -246,8 +249,10 @@
     if (sess.rip && trackDi(it) !== sess.track) { sess.track = trackDi(it); renderAnswers(); }
     sess.curKey = chiave(it);
     if (sess.track === "valori") it = { v: it.v, rest: it.rest, d: it.rest ? 34 : 29 + Math.floor(Math.random() * 9) };
+    if (sess.track === "ritmo") { LN.ritmo.ferma(); it = LN.ritmo.battuta(sess.L, sess.cur && sess.cur.chiave); sess.ritRes = null; }
     sess.cur = it; sess.locked = false;
-    $("#prompt").textContent = sess.track === "ascolto" ? (sess.L.uguali ? "La seconda nota sale, scende o resta uguale?" : "La seconda nota sale o scende?")
+    if (sess.track === "ritmo") statoRitmo("");
+    $("#prompt").textContent = sess.track === "ritmo" ? "Batti questo ritmo" : sess.track === "ascolto" ? (sess.L.uguali ? "La seconda nota sale, scende o resta uguale?" : "La seconda nota sale o scende?")
       : sess.track === "note" ? "Come si chiama questa nota?" : it.rest ? "Che pausa è? Quanto vale?" : "Che figura è? Quanto vale?";
     drawStage("");
     if (sess.track === "ascolto") suonaCoppia();
@@ -261,8 +266,59 @@
   function nomeAsc(d) { return LN.nm(d) + (d >= 35 ? " acuto" : ""); } // nell'ascolto c'è il Do centrale e il Do acuto
   function suonaCoppia() { LN.suono.sequenza([[LN.midiOf(sess.cur.a), 0.8], [LN.midiOf(sess.cur.b), 0.8]], true); }
   var ORECCHIO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9v6h4l5 4V5L9 9z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+  /* Ritmo: Ascolta (facoltativo), poi Inizia: 4 colpi di metronomo e si batte sul pulsante grande. */
+  var testinaRaf = 0;
+  function statoRitmo(fase) {
+    var occupato = fase === "ascolto" || fase === "prova";
+    ["#rAscolta", "#rInizia"].forEach(function (s) { var b = $(s); if (b) b.disabled = occupato || sess.locked; });
+    var pad = $("#tapPad"); if (pad) pad.classList.toggle("attivo", fase === "prova");
+  }
+  function conta(n, testo) {
+    var c = $("#contaGrande"); if (!c) return;
+    c.textContent = n ? String(n) : testo || "";
+    c.classList.remove("batti"); void c.offsetWidth; c.classList.add("batti");
+  }
+  function muoviTestina() {
+    cancelAnimationFrame(testinaRaf);
+    (function passo() {
+      var t = $("#testina"); if (!t) return;
+      var b = LN.ritmo.posizione();
+      if (b == null) { t.style.visibility = "hidden"; if (LN.ritmo.fase()) testinaRaf = requestAnimationFrame(passo); return; }
+      var xx = LN.ritmo.xDi(b);
+      t.setAttribute("x1", xx); t.setAttribute("x2", xx); t.style.visibility = "visible";
+      testinaRaf = requestAnimationFrame(passo);
+    })();
+  }
+  function ritmoAscolta() {
+    if (!sess || sess.locked || LN.ritmo.fase()) return;
+    statoRitmo("ascolto");
+    LN.ritmo.ascolta(sess.cur, sess.L.bpm, function (n) { conta(n, "Ascolta"); }, function () { conta(0, ""); statoRitmo(""); });
+    muoviTestina();
+  }
+  function ritmoInizia() {
+    if (!sess || sess.locked || LN.ritmo.fase()) return;
+    statoRitmo("prova");
+    LN.ritmo.prova(sess.cur, sess.L.bpm, function (n) { conta(n, "Batti!"); }, function (res) {
+      if (!sess) return;
+      sess.ritRes = res;
+      grade(res.ok);
+      statoRitmo("");
+    });
+    muoviTestina();
+  }
+  function ritmoColpo() {
+    if (!LN.ritmo.colpo()) return;
+    var p = $("#tapPad"); if (p) { p.classList.remove("colpito"); void p.offsetWidth; p.classList.add("colpito"); }
+  }
+
   function drawStage(cls) {
     var it = sess.cur;
+    if (sess.track === "ritmo") {
+      $("#stage").innerHTML = cls
+        ? '<div class="rit-dopo">' + LN.ritmo.svg(it, { esito: sess.ritRes }) + '<p class="rit-legenda"><span class="lg-att"></span>dove andava il colpo <span class="lg-ok"></span>colpo a tempo <span class="lg-bad"></span>colpo fuori tempo</p></div>'
+        : '<div class="rit">' + LN.ritmo.svg(it, { testina: true }) + '<div class="conta-grande" id="contaGrande" aria-live="polite"></div></div>';
+      return;
+    }
     if (sess.track === "ascolto") {
       $("#stage").innerHTML = cls
         ? '<div class="asc-dopo">' + LN.staffSVG({ notes: [{ d: it.a, label: nomeAsc(it.a) }, { d: it.b, label: nomeAsc(it.b), cls: cls }], gap: 56, startX: 70, scale: 2, aria: "Le due note ascoltate" }) + "</div>"
@@ -277,6 +333,14 @@
   function pianoMode() { return sess && sess.track === "note" && S.set.mode === "tastiera"; }
   function renderAnswers() {
     var keys = keysOf(), box = $("#answers");
+    box.classList.toggle("rit-box", sess.track === "ritmo");
+    if (sess.track === "ritmo") {
+      box.hidden = false; $("#pianoWrap").hidden = true;
+      box.innerHTML = '<div class="rit-ctl"><button class="btn3d" id="rAscolta">' + ICON.ascolto + 'Ascolta</button><button class="btn3d primary" id="rInizia">Inizia</button></div>' +
+        '<button class="tap-pad" id="tapPad" aria-label="Batti qui">Batti qui</button>';
+      $("#hint").innerHTML = 'Premi <b>Inizia</b>: dopo 4 colpi di metronomo batti il ritmo sul pulsante grande. Tasti: <span class="kbd">Spazio</span> per battere · <span class="kbd">Invio</span> per continuare';
+      return;
+    }
     box.classList.toggle("values", sess.track === "valori");
     box.classList.toggle("dir", sess.track === "ascolto");
     box.style.setProperty("--cols", sess.track === "note" ? Math.min(keys.length, 4) : Math.min(keys.length, 3));
@@ -306,6 +370,7 @@
     var p = $("#piano"); p.style.setProperty("--n", N); p.innerHTML = html;
   }
   function describe(it) {
+    if (sess.track === "ritmo") return LN.ritmo.descrivi(sess.ritRes);
     if (sess.track === "ascolto") {
       var da = "Da " + nomeAsc(it.a) + " a " + nomeAsc(it.b);
       return it.b > it.a ? da + ": la seconda nota è più acuta, sale." : it.b < it.a ? da + ": la seconda nota è più grave, scende." : "È la stessa nota, " + nomeAsc(it.a) + ": resta uguale.";
@@ -320,14 +385,15 @@
     sess.ms += performance.now() - sess.qStart;
     sess.i++;
     $("#pFill").style.width = (sess.i / sess.L.q * 100) + "%";
-    if (sess.track === "ascolto") { if (!ok) suonaCoppia(); }
+    if (sess.track === "ritmo") { /* il suono c'è già stato */ }
+    else if (sess.track === "ascolto") { if (!ok) suonaCoppia(); }
     else if (sess.track === "note") LN.suono.play(LN.midiOf(it.d), 0.9);
     else if (!it.rest) LN.suono.play(LN.midiOf(it.d), Math.min(LN.VALUES[it.v].beats * LN.BEAT, 3));
     sess.fila = ok ? sess.fila + 1 : 0;
     sess.filaMax = Math.max(sess.filaMax, sess.fila);
     if (ok) sess.ok++;
-    // Gli errori d'ascolto non entrano nel ripasso, che è fatto di note e figure da leggere.
-    if (sess.track !== "ascolto") {
+    // Gli errori di ascolto e ritmo non entrano nel ripasso, che è fatto di note e figure da leggere.
+    if (daLeggere(sess.track)) {
       sess.esiti.push([sess.curKey, ok]);
       if (!ok) sess.misses[sess.curKey] = (sess.misses[sess.curKey] || 0) + 1;
     }
@@ -339,7 +405,7 @@
     $("#sheetMsg").textContent = describe(it);
     $("#sheetBtn").className = "btn3d " + (ok ? "go-ok" : "go-bad");
     sh.hidden = false;
-    if (ok) sess.timer = setTimeout(next, 1100);
+    if (ok) sess.timer = setTimeout(next, sess.track === "ritmo" ? 2200 : 1100);
     else $("#sheetBtn").focus();
   }
   function answer(k) {
@@ -358,7 +424,13 @@
     if (!ok) { var r = $('#piano [data-midi="' + target + '"]'); if (r) r.classList.add("ok"); }
     grade(ok);
   }
-  $("#answers").addEventListener("click", function (e) { var b = e.target.closest(".ans"); if (b) answer(+b.dataset.k); });
+  $("#answers").addEventListener("click", function (e) {
+    var b = e.target.closest(".ans"); if (b) { answer(+b.dataset.k); return; }
+    if (e.target.closest("#rAscolta")) ritmoAscolta();
+    else if (e.target.closest("#rInizia")) ritmoInizia();
+  });
+  // Il colpo si registra appena il dito tocca il pulsante (pointerdown), non al rilascio.
+  $("#answers").addEventListener("pointerdown", function (e) { if (e.target.closest("#tapPad")) { e.preventDefault(); ritmoColpo(); } });
   $("#stage").addEventListener("click", function (e) {
     if (e.target.closest("#riascolta")) { suonaCoppia(); return; }
     var g = e.target.closest(".asc-dopo g.n[data-midi]"); if (g) LN.suono.play(+g.dataset.midi, 0.8);
@@ -369,6 +441,10 @@
     if (!sess || $("#v-sessione").hidden || e.ctrlKey || e.metaKey || e.altKey || !$("#exitModal").hidden) return;
     if (e.key === "Enter" && !$("#sheet").hidden) { e.preventDefault(); next(); return; }
     if (sess.locked || pianoMode()) return;
+    if (sess.track === "ritmo") {
+      if (e.key === " " && !e.repeat) { e.preventDefault(); if (LN.ritmo.fase() === "registra" || LN.ritmo.fase() === "conteggio") ritmoColpo(); else if (!LN.ritmo.fase()) ritmoInizia(); }
+      return;
+    }
     if (sess.track === "ascolto") {
       if (e.key === " ") { e.preventDefault(); suonaCoppia(); return; }
       if (e.key === "ArrowUp") { e.preventDefault(); answer(0); return; }
@@ -386,6 +462,7 @@
   $("#stayBtn").addEventListener("click", function () { $("#exitModal").hidden = true; });
   $("#leaveBtn").addEventListener("click", function () {
     $("#exitModal").hidden = true;
+    LN.ritmo.ferma();
     if (sess) clearTimeout(sess.timer);
     sess = null; $("#sheet").hidden = true;
     show("percorso");

@@ -4,6 +4,8 @@ window.LN = window.LN || {};
   "use strict";
   var CHROMA = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
   var actx = null, bank = null, bankP = null, buffers = {};
+  var attivi = []; // suoni programmati, per poterli fermare (uscita a metà di un esercizio di ritmo)
+  function tieni(nodo) { attivi.push(nodo); nodo.onended = function () { var i = attivi.indexOf(nodo); if (i > -1) attivi.splice(i, 1); }; }
 
   function ctx() {
     if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
@@ -38,7 +40,7 @@ window.LN = window.LN || {};
     [[1, 0.9], [3, 0.35], [5, 0.15]].forEach(function (p) {
       var o = a.createOscillator(), og = a.createGain();
       o.type = "sine"; o.frequency.value = f * p[0]; og.gain.value = p[1];
-      o.connect(og); og.connect(g); o.start(t); o.stop(t + dur + 0.15);
+      o.connect(og); og.connect(g); o.start(t); o.stop(t + dur + 0.15); tieni(o);
     });
   }
 
@@ -51,7 +53,7 @@ window.LN = window.LN || {};
     g.gain.setValueAtTime(0.9, t + Math.max(0.04, dur - 0.06));
     g.gain.linearRampToValueAtTime(0.0001, t + dur + 0.08);
     src.connect(g); g.connect(a.destination);
-    src.start(t); src.stop(t + dur + 0.1);
+    src.start(t); src.stop(t + dur + 0.1); tieni(src);
   }
 
   LN.suono = {
@@ -73,6 +75,30 @@ window.LN = window.LN || {};
         note.forEach(function (n, i) { suona(a, bufs[i], n[0], n[1], t); t += n[1] + 0.15; });
       });
     },
+    /* ---- Per gli esercizi di ritmo (tempi in secondi dell'orologio audio) ---- */
+    contesto: function () { return ctx(); },
+    /* Carica in anticipo i campioni delle note che verranno programmate. */
+    prepara: function (midis) {
+      var a = ctx(); if (!a) return Promise.resolve();
+      return loadBank().then(function () { return Promise.all(midis.map(function (m) { return getBuffer(chiave(m)); })); });
+    },
+    /* Nota del clarinetto a un tempo preciso (anche col suono spento: serve all'esercizio). */
+    notaA: function (m, dur, t) {
+      var a = ctx(); if (!a) return;
+      loadBank().then(function () { return getBuffer(chiave(m)); }).then(function (buf) { suona(a, buf, m, dur, t); });
+    },
+    /* Colpo di metronomo: più forte sul primo tempo. */
+    click: function (t, forte) {
+      var a = ctx(); if (!a) return;
+      var o = a.createOscillator(), g = a.createGain();
+      o.frequency.value = forte ? 1500 : 1000;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(forte ? 0.5 : 0.3, t + 0.003);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+      o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + 0.08); tieni(o);
+    },
+    ferma: function () { attivi.slice().forEach(function (n) { try { n.stop(); } catch (e) {} }); attivi = []; },
+
     /* Clarinetto in Sib: il suono reale è un tono sotto la nota scritta. */
     SIB: -2
   };

@@ -79,10 +79,21 @@ window.LN = window.LN || {};
     L.keys = L.uguali ? [0, 1, 2] : [0, 1];
   });
 
+  /* Ritmo: battute in 4/4 costruite a caso con queste figure (vedi ritmo.js), a bpm battiti al minuto. */
+  function conPausa(bt) { return bt.some(function (e) { return e.rest; }); }
+  function conCrome(bt) { return bt.some(function (e) { return e.trave === 0; }); }
+  var RIT_LEVELS = [
+    { title: "Batti il tempo", figure: ["semibreve", "minima", "semiminima"], bpm: 66, q: 5 },
+    { title: "Arrivano le crome", figure: ["minima", "semiminima", "crome"], bpm: 66, q: 6, serve: conCrome },
+    { title: "Ritmo e pause", figure: ["minima", "semiminima", "crome", "pausa", "pausaMinima"], bpm: 72, q: 6, serve: conPausa }
+  ];
+  RIT_LEVELS.forEach(function (L) { L.items = [{ r: 1 }]; L.keys = []; });
+
   LN.TRACKS = {
     note: { levels: NOTE_LEVELS, label: "Note" },
     valori: { levels: VAL_LEVELS, label: "Valori" },
-    ascolto: { levels: ASC_LEVELS, label: "Ascolto" }
+    ascolto: { levels: ASC_LEVELS, label: "Ascolto" },
+    ritmo: { levels: RIT_LEVELS, label: "Ritmo" }
   };
 
   /* Il percorso: unità in ordine, ognuna con la sua lezione di guida e le sue tappe. */
@@ -94,6 +105,7 @@ window.LN = window.LN || {};
     { titolo: "Figure veloci", descr: "Semicroma e biscroma", lezione: 6, tappe: [["valori", 3]] },
     { titolo: "Verso l'acuto", descr: "Dal Do al Mi acuto", lezione: 4, tappe: [["note", 6], ["note", 7]] },
     { titolo: "Il silenzio conta", descr: "Le pause", lezione: 7, tappe: [["valori", 4], ["valori", 5]] },
+    { titolo: "Il ritmo", descr: "Batti a tempo quello che leggi", lezione: 9, tappe: [["ritmo", 1], ["ritmo", 2], ["ritmo", 3]] },
     { titolo: "Tutto il pentagramma", descr: "Righe, spazi, note e pause", lezione: 4, tappe: [["note", 8], ["valori", 6]] },
     { titolo: "Oltre il pentagramma", descr: "I tagli addizionali", lezione: 5, tappe: [["note", 9], ["note", 10]] }
   ];
