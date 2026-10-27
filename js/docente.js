@@ -100,6 +100,10 @@ window.LN = window.LN || {};
       '<div class="btn-row"><button class="btn3d primary" id="dCrea">Crea account</button><span class="muted" id="dStato" role="status"></span></div>' +
       '<div id="dEsito"></div></div></div>' +
 
+      '<div class="card"><div class="card-head"><h2>Copia di sicurezza</h2></div><div class="pad grid-gap">' +
+      '<p class="muted">Una volta al mese scarica la copia di account, password, punti e classifiche. Il file finisce nella cartella Download: poi fai doppio clic su <strong>BACKUP</strong> nella cartella del sito e lui lo mette sulla chiavetta e su Google Drive. Il file contiene i dati degli studenti: non condividerlo con nessuno.</p>' +
+      '<div class="btn-row"><button class="btn3d primary" id="dCopia">Scarica la copia dei dati</button><span class="muted" id="dCopiaStato" role="status"></span></div></div></div>' +
+
       '<div class="card"><div class="card-head"><h2>Nuovo anno scolastico</h2></div><div class="pad grid-gap">' +
       '<p class="muted">A settembre sposta tutti gli studenti nella classe successiva: 1AF diventa 2AF, 2BF diventa 3BF. Chi era in terza passa tra gli «Ex studenti»: conserva account e progressi, esce dalla lega della settimana e dall\'elenco dei compagni, ma resta nella classifica di sempre con tutti i suoi XP. Le classi nuove vengono create in automatico. Per un singolo studente usa invece il menu Classe nella tabella.</p>' +
       '<div class="btn-row"><button class="btn3d' + (armato === "*anno" ? " go-bad" : "") + '" id="dAnno">' + (armato === "*anno" ? "Confermi il passaggio d'anno per tutti?" : "Passaggio d'anno") + "</button>" +
@@ -199,6 +203,20 @@ window.LN = window.LN || {};
       render();
     }
   });
+  async function scaricaCopia() {
+    var st = $("#dCopiaStato"), b = $("#dCopia");
+    b.disabled = true; st.textContent = "Preparo la copia…";
+    try {
+      var copia = await A.copiaDati(), oggi = new Date().toISOString().slice(0, 10);
+      var url = URL.createObjectURL(new Blob([JSON.stringify(copia, null, 1)], { type: "application/json" }));
+      var a = document.createElement("a"); a.href = url; a.download = "leggi-le-note-dati-" + oggi + ".json";
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+      var t = copia.tabelle;
+      st.textContent = "Fatto: " + t.studenti.length + " studenti, " + t.sessioni.length + " sessioni. Il file è nella cartella Download.";
+    } catch (err) { st.textContent = "Copia non riuscita: " + err.message; }
+    b.disabled = false;
+  }
+
   document.addEventListener("click", async function (e) {
     if (!$("#v-docente") || $("#v-docente").hidden) return;
     var t = e.target, b;
@@ -206,6 +224,7 @@ window.LN = window.LN || {};
     if (t.closest("#dMostra")) { mostra = !mostra; render(); return; }
     if (t.closest("#dStampaTutti")) { stampa(conPassword(visibili())); return; }
     if (t.closest("#dCopiaTutti")) { var l = conPassword(visibili()); copia(l.map(messaggio).join("\n\n"), l.length); return; }
+    if (t.closest("#dCopia")) { scaricaCopia(); return; }
     if (t.closest("#dAnno")) {
       if (armato !== "*anno") { armato = "*anno"; render(); return; }
       t.closest("#dAnno").disabled = true;

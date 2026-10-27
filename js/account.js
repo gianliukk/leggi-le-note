@@ -186,6 +186,26 @@ window.LN = window.LN || {};
     eliminaStudente: async function (username) {
       var r = await client.rpc("elimina_studente", { p_username: username });
       if (r.error) throw new Error(traduci(r.error));
+    },
+
+    /* Copia di sicurezza: tutte le tabelle che il docente può leggere, a pagine da 1000 righe. */
+    copiaDati: async function () {
+      var copia = { sito: "Leggi le note", creata: new Date().toISOString(), tabelle: {} };
+      var tabelle = ["classi", "studenti", "progressi", "sessioni", "compiti", "leghe_storia"];
+      for (var i = 0; i < tabelle.length; i++) {
+        var righe = [], da = 0;
+        for (;;) {
+          var r = await client.from(tabelle[i]).select("*").range(da, da + 999);
+          if (r.error) throw new Error(tabelle[i] + ": " + traduci(r.error));
+          righe = righe.concat(r.data);
+          if (r.data.length < 1000) break;
+          da += 1000;
+        }
+        copia.tabelle[tabelle[i]] = righe;
+      }
+      var c = await client.rpc("elenco_credenziali");
+      copia.tabelle.credenziali = c.error ? [] : c.data;
+      return copia;
     }
   };
 
