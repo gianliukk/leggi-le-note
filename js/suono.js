@@ -45,10 +45,21 @@ window.LN = window.LN || {};
   }
 
   function chiave(m) { return CHROMA[m % 12] + (Math.floor(m / 12) - 1); }
-  function suona(a, buf, m, dur, t) {
-    if (!buf) { synth(m, dur, t); return; }
+  /* Il banco va dal La3 al Re6 reali: fuori da lì si usa il campione più vicino, trasposto. */
+  function vicino(m) {
+    if (!bank) return m;
+    for (var d = 0; d <= 12; d++) { if (bank[chiave(m - d)]) return m - d; if (bank[chiave(m + d)]) return m + d; }
+    return m;
+  }
+  function bufferPer(m) {
+    var c = vicino(m);
+    return getBuffer(chiave(c)).then(function (b) { return b ? { buf: b, rate: Math.pow(2, (m - c) / 12) } : null; });
+  }
+  function suona(a, item, m, dur, t) {
+    if (!item) { synth(m, dur, t); return; }
     var src = a.createBufferSource(), g = a.createGain();
-    src.buffer = buf;
+    src.buffer = item.buf;
+    src.playbackRate.value = item.rate;
     g.gain.setValueAtTime(0.9, t);
     g.gain.setValueAtTime(0.9, t + Math.max(0.04, dur - 0.06));
     g.gain.linearRampToValueAtTime(0.0001, t + dur + 0.08);
@@ -62,14 +73,14 @@ window.LN = window.LN || {};
       if (!LN.store.set.sound) return;
       dur = dur || 1;
       var a = ctx(); if (!a) return;
-      loadBank().then(function () { return getBuffer(chiave(m)); }).then(function (buf) { suona(a, buf, m, dur, a.currentTime); });
+      loadBank().then(function () { return bufferPer(m); }).then(function (buf) { suona(a, buf, m, dur, a.currentTime); });
     },
     /* Note una dopo l'altra: [[midi, secondi], ...]. forza = suona anche col suono spento (esercizi d'ascolto). */
     sequenza: function (note, forza) {
       if (!forza && !LN.store.set.sound) return;
       var a = ctx(); if (!a) return;
       loadBank().then(function () {
-        return Promise.all(note.map(function (n) { return getBuffer(chiave(n[0])); }));
+        return Promise.all(note.map(function (n) { return bufferPer(n[0]); }));
       }).then(function (bufs) {
         var t = a.currentTime + 0.05;
         note.forEach(function (n, i) { suona(a, bufs[i], n[0], n[1], t); t += n[1] + 0.15; });
@@ -80,12 +91,12 @@ window.LN = window.LN || {};
     /* Carica in anticipo i campioni delle note che verranno programmate. */
     prepara: function (midis) {
       var a = ctx(); if (!a) return Promise.resolve();
-      return loadBank().then(function () { return Promise.all(midis.map(function (m) { return getBuffer(chiave(m)); })); });
+      return loadBank().then(function () { return Promise.all(midis.map(bufferPer)); });
     },
     /* Nota del clarinetto a un tempo preciso (anche col suono spento: serve all'esercizio). */
     notaA: function (m, dur, t) {
       var a = ctx(); if (!a) return;
-      loadBank().then(function () { return getBuffer(chiave(m)); }).then(function (buf) { suona(a, buf, m, dur, t); });
+      loadBank().then(function () { return bufferPer(m); }).then(function (buf) { suona(a, buf, m, dur, t); });
     },
     /* Colpo di metronomo: più forte sul primo tempo. */
     click: function (t, forte) {

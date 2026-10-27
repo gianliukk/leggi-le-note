@@ -89,7 +89,19 @@ window.LN = window.LN || {};
   ];
   RIT_LEVELS.forEach(function (L) { L.items = [{ r: 1 }]; L.keys = []; });
 
+  /* Diteggiatura: note per livello (nomi come in diteggiatura.js). Domande: "quale" posizione per la nota, "nome" della posizione. */
+  var DIT_LEVELS = [
+    { title: "Le prime posizioni", note: ["Sol grave", "La grave", "Si grave", "Do medio", "Re medio", "Mi medio", "Fa medio", "Sol medio"], q: 10 },
+    { title: "Le note di gola", note: ["Mi medio", "Fa medio", "Fa♯ medio", "Sol medio", "Sol♯ medio", "La medio", "La♯ medio"], q: 10 },
+    { title: "Grave e alterazioni", note: ["Mi grave", "Fa grave", "Fa♯ grave", "Sol♯ grave", "La♯ grave", "Do♯ medio", "Re♯ medio"], q: 12 },
+    { title: "Il registro acuto", note: ["Si medio", "Do acuto", "Re acuto", "Mi acuto", "Fa acuto", "Sol acuto", "La acuto", "Si acuto", "Do sovracuto"], q: 12 },
+    { title: "Acuto e alterazioni", note: ["Do♯ acuto", "Re♯ acuto", "Fa♯ acuto", "Sol♯ acuto", "La♯ acuto", "La♯ medio", "Si medio"], q: 12 },
+    { title: "Il sovracuto", note: ["Si acuto", "Do sovracuto", "Do♯ sovracuto", "Re sovracuto", "Re♯ sovracuto", "Mi sovracuto", "Fa sovracuto"], q: 12 }
+  ];
+  DIT_LEVELS.forEach(function (L) { L.items = [{ dt: 1 }]; });
+
   LN.TRACKS = {
+    dita: { levels: DIT_LEVELS, label: "Diteggiatura" },
     note: { levels: NOTE_LEVELS, label: "Note" },
     valori: { levels: VAL_LEVELS, label: "Valori" },
     ascolto: { levels: ASC_LEVELS, label: "Ascolto" },
@@ -107,7 +119,9 @@ window.LN = window.LN || {};
     { titolo: "Il silenzio conta", descr: "Le pause", lezione: 7, tappe: [["valori", 4], ["valori", 5]] },
     { titolo: "Il ritmo", descr: "Batti a tempo quello che leggi", lezione: 9, tappe: [["ritmo", 1], ["ritmo", 2], ["ritmo", 3]] },
     { titolo: "Tutto il pentagramma", descr: "Righe, spazi, note e pause", lezione: 4, tappe: [["note", 8], ["valori", 6]] },
-    { titolo: "Oltre il pentagramma", descr: "I tagli addizionali", lezione: 5, tappe: [["note", 9], ["note", 10]] }
+    { titolo: "Oltre il pentagramma", descr: "I tagli addizionali", lezione: 5, tappe: [["note", 9], ["note", 10]] },
+    { titolo: "Le posizioni del clarinetto", descr: "Registro grave e note di gola", lezione: 10, tappe: [["dita", 1], ["dita", 2], ["dita", 3]] },
+    { titolo: "Posizioni acute", descr: "Registro acuto e sovracuto", lezione: 10, tappe: [["dita", 4], ["dita", 5], ["dita", 6]] }
   ];
   LN.TAPPE = [];
   LN.PERCORSO.forEach(function (u, ui) {

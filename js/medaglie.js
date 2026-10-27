@@ -24,6 +24,7 @@ window.LN = window.LN || {};
     { id: "pause", nome: "Il silenzio conta", descr: "Supera l'unità «Il silenzio conta»", segno: "\u{1D13D}", n: 1, val: function () { return unitaFatta("Il silenzio conta"); } },
     { id: "orecchio", nome: "Orecchio d'oro", descr: "Supera l'unità «Orecchio attento»", segno: "\u{1D192}", n: 1, val: function () { return unitaFatta("Orecchio attento"); } },
     { id: "ritmo", nome: "Senso del ritmo", descr: "Supera l'unità «Il ritmo»", segno: "\u{1D15F}\u{1D15F}", n: 1, val: function () { return unitaFatta("Il ritmo"); } },
+    { id: "dita", nome: "Dita d'oro", descr: "Supera tutte le tappe sulle posizioni del clarinetto", segno: "\u{1D10B}", n: 6, val: function () { return LN.TAPPE.filter(function (t) { return t.track === "dita" && S.completata(t.key); }).length; } },
     { id: "finale", nome: "Gran finale", descr: "Supera tutte le tappe del percorso", segno: "\u{1D102}", sc: 1.3, n: LN.TAPPE.length, val: function () { return LN.TAPPE.filter(function (t) { return S.completata(t.key); }).length; } },
     { id: "perfetta", nome: "Esecuzione perfetta", descr: "Completa una tappa senza errori", segno: "♬", n: 1, val: perfette },
     { id: "leggio", nome: "Leggio d'oro", descr: "Prendi 3 stelle in 5 tappe", segno: "\u{1D11A}", n: 5, val: function () { return conStelle(3); } },

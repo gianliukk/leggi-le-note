@@ -92,6 +92,32 @@ window.LN = window.LN || {};
         es([["f", 2], ["p", 2], ["f", 2], ["p", 2]], "Si batte sull'1 e sul 3; sul 2 e sul 4 si conta in silenzio"),
         '<p class="tip">Negli esercizi premi <strong>Ascolta</strong> per sentire il ritmo dal clarinetto, poi <strong>Inizia</strong>: dopo quattro colpi di metronomo batti sul pulsante grande o con la barra spaziatrice.</p>'
       ];
+    } },
+    { t: "Le posizioni del clarinetto", quiz: false, body: function () {
+      var D = LN.dita, esempio = { fori: ["P", "T", "L1", "L2", "L3"], chiavi: ["6"] };
+      var chiavi = Object.keys(D.CHIAVI).sort(D.ordina);
+      function colonna(m) {
+        return '<div class="mappa-col ' + m + '"><h4>' + (m === "sx" ? "Mano sinistra" : "Mano destra") + "</h4><ul>" + chiavi.filter(function (k) { return D.CHIAVI[k].mano === m; }).map(function (k) {
+          var c = D.CHIAVI[k]; return '<li><span class="ch-num ' + m + '">' + D.etichetta(k) + "</span> " + c.testo + " <small>(" + (c.come || c.dito) + ")</small></li>";
+        }).join("") + "</ul></div>";
+      }
+      var mappa = '<figure class="fig mappa-chiavi">' + colonna("sx") + D.svg({ fori: [], chiavi: chiavi }, { legenda: true, aria: "Tutte le chiavi: a sinistra quelle della mano sinistra, a destra quelle della mano destra" }) + colonna("dx") +
+        "<figcaption>Tutte le chiavi con il loro numero: le gialle si premono con la mano sinistra, le azzurre con la mano destra.</figcaption></figure>";
+      var tavola = D.NOTE.map(function (n) {
+        // le note enarmoniche (La♯ / Si♭) compaiono tutte e due sul pentagramma
+        var note = n.sp.map(function (g) { return { d: g[0], v: 0, acc: g[1] }; });
+        return '<div class="tav-nota"><div class="tav-pent">' + LN.staffSVG({ notes: note, gap: 40, startX: 44, scale: note.length > 1 ? 0.95 : 1, aria: n.nome }) + "</div>" +
+          "<b>" + n.nome + '</b><div class="tav-pos">' + n.pos.map(function (p, i) { return (i ? '<span class="tav-o">o</span>' : "") + D.svg(p, { aria: D.aParole(p) }); }).join("") + "</div></div>";
+      }).join("");
+      return [
+        "<p>Ogni posizione è disegnata come il clarinetto visto di fronte. Al centro i fori: tre per la <strong>mano sinistra</strong>, una lineetta, tre per la <strong>mano destra</strong>. A sinistra, perché stanno dietro lo strumento, il <strong>portavoce</strong> e il <strong>foro del pollice</strong>, tutti e due per il pollice sinistro. Intorno, al loro posto, tutte le chiavi.</p>",
+        '<figure class="fig tav-esempio">' + D.svg(esempio, { aria: "Esempio" }) + "<figcaption>Foro pieno = chiuso; vuoto = aperto. Le chiavi colorate con il numero sono quelle da premere, le altre restano libere. Qui: Sol♯ acuto.</figcaption></figure>",
+        "<p>I <strong>numeri</strong> sono le chiavi da premere, numerate come nell'«Elenco delle posizioni» del metodo <em>Ascolta, leggi &amp; suona</em>. Il colore dice con quale mano premere: <strong>gialle</strong> con la mano sinistra, <strong>azzurre</strong> con la mano destra. Ogni chiave ha la sua sagoma ed è disegnata dove si trova sullo strumento visto di fronte: in alto le chiavi del La e del La♭; a sinistra dei fori le chiavi laterali 11, 10 bis, 8 e 7, che si premono con l'indice destro (11, 10 bis e 7 con il dorso dell'indice, vicino alla nocca); tra il secondo e il terzo foro della mano sinistra la chiavetta 7 bis e, sotto il terzo foro, la paletta 6; subito sotto la lineetta, a destra, le chiavi del mignolo sinistro: la 3 bis di traverso e, sotto, le chiavi lunghe 1 e 2; tra il secondo e il terzo foro della mano destra la chiavetta 5; in basso a sinistra le chiavi del mignolo destro.</p>",
+        mappa,
+        "<p>Le note sono <strong>scritte</strong> per il clarinetto in Si♭: il suono reale è un tono sotto. Quando ci sono due posizioni, separate da «o», vanno bene tutte e due: si sceglie quella più comoda per la nota che viene prima o dopo.</p>",
+        "<h3>La tavola completa</h3>",
+        '<div class="tavola">' + tavola + "</div>"
+      ];
     } }
   ];
 })(window.LN);

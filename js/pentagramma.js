@@ -51,6 +51,7 @@ window.LN = window.LN || {};
         var L;
         if (d < bottomD) for (L = bottomD - 2; L >= d; L -= 2) s += '<line class="lg" x1="' + (x - 10) + '" x2="' + (x + 10) + '" y1="' + Y(L) + '" y2="' + Y(L) + '"/>';
         if (d > bottomD + 8) for (L = bottomD + 10; L <= d; L += 2) s += '<line class="lg" x1="' + (x - 10) + '" x2="' + (x + 10) + '" y1="' + Y(L) + '" y2="' + Y(L) + '"/>';
+        if (n.acc) s += '<text class="acc" x="' + (x - 13) + '" y="' + (y + (n.acc === "b" ? 4 : 5)) + '" font-size="' + (n.acc === "b" ? 19 : 17) + '" text-anchor="middle">' + (n.acc === "b" ? "♭" : "♯") + "</text>";
         if (v === 0) s += '<ellipse class="hdo" cx="' + x + '" cy="' + y + '" rx="6.6" ry="4.2" stroke-width="2.3"/>';
         else if (v === 1) s += '<ellipse class="hdo" cx="' + x + '" cy="' + y + '" rx="5.6" ry="3.7" stroke-width="1.6" transform="rotate(-20 ' + x + " " + y + ')"/>';
         else s += '<ellipse class="hd" cx="' + x + '" cy="' + y + '" rx="6" ry="4.3" transform="rotate(-20 ' + x + " " + y + ')"/>';

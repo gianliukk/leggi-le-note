@@ -10,6 +10,7 @@
   --accent: #F2B705;
   --accent-shade: #C08F00;
   --accent-ink: #2E2300;
+  --chiave-dx: #8CC8F5; --chiave-dx-s: #3E8FCC; --chiave-dx-ink: #0D2A40;
   --ok: #2A9D5C;
   --ok-shade: #1E7746;
   --ok-soft: #DDF3E6;
@@ -216,6 +217,9 @@ body.in-sessione .top { display: none; }
 .staff .bar { stroke: var(--staff); stroke-width: 1.2; }
 .staff .bar-fine { fill: var(--staff); }
 .staff .rest { font-family: var(--music); }
+.staff .acc { fill: var(--staff); font-family: var(--music); }
+.staff .n.ok .acc { fill: var(--ok); }
+.staff .n.bad .acc { fill: var(--bad); }
 .staff .lbl { fill: var(--muted); font-family: var(--body); font-size: 10.5px; font-weight: 700; text-anchor: middle; }
 .staff .lbl-q { display: none; }
 .staff .hit { fill: transparent; }
@@ -261,6 +265,52 @@ body.in-sessione .top { display: none; }
 .asc-btn svg { width: 56px; height: 56px; }
 .asc-dopo { display: grid; justify-items: center; }
 
+/* Diteggiatura: posizione come nell'elenco del metodo */
+.dita-pos { width: 90px; height: auto; display: block; overflow: visible; }
+.dita-pos .corpo { fill: var(--soft); stroke: var(--line); stroke-width: 1.5; }
+.dita-pos .fr { fill: var(--surface); stroke: var(--staff); stroke-width: 2.4; }
+.dita-pos .fr.on { fill: var(--staff); }
+.dita-pos .pv { fill: var(--surface); stroke: var(--staff); stroke-width: 1.6; }
+.dita-pos .pv.on { fill: var(--staff); }
+.dita-pos .sep { stroke: var(--line-strong); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.dita-pos .scritta { fill: var(--muted); font-family: var(--body); font-weight: 700; font-size: 9px; letter-spacing: 0.04em; }
+.dita-pos .ch { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1.6; }
+.dita-pos .ch.su { fill: var(--accent); stroke: var(--accent-shade); stroke-width: 1.8; }
+.dita-pos .ch.su.dx { fill: var(--chiave-dx); stroke: var(--chiave-dx-s); }
+.dita-pos .ch-t { fill: var(--accent-ink); font-family: var(--display); font-weight: 800; font-size: 16px; }
+.dita-pos .ch-t.dx { fill: var(--chiave-dx-ink); }
+.dita-pos .ch-t .bis { font-size: 10px; }
+.dita-pos .ch-t[style] .bis { font-size: 9px; }
+.dita-pos .guida { stroke: var(--accent-shade); stroke-width: 2; stroke-linecap: round; }
+.dita-pos .guida.dx { stroke: var(--chiave-dx-s); }
+.dita-pos .firma { fill: var(--muted); font-family: var(--body); font-size: 10px; font-weight: 700; opacity: 0.75; }
+.dita-pos .filigrana { fill: var(--ink); font-family: var(--display); font-size: 21px; font-weight: 800; opacity: 0.07; pointer-events: none; }
+.mappa-chiavi { display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 10px; }
+.mappa-chiavi .dita-pos { width: 210px; }
+.mappa-chiavi figcaption { grid-column: 1 / -1; }
+.mappa-col h4 { margin: 0 0 6px; font-size: 0.95rem; }
+.mappa-col ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 0.88rem; }
+.mappa-col.sx { text-align: right; }
+.ch-num { display: inline-block; min-width: 22px; padding: 1px 6px; border-radius: 999px; text-align: center; font-family: var(--display); font-weight: 800; font-size: 0.8rem; background: var(--accent); color: var(--accent-ink); }
+.ch-num.dx { background: var(--chiave-dx); color: var(--chiave-dx-ink); }
+@media (max-width: 560px) { .mappa-chiavi { grid-template-columns: 1fr 1fr; } .mappa-chiavi .dita-pos { grid-column: 1 / -1; grid-row: 1; justify-self: center; } .mappa-col.sx { text-align: left; } }
+.dita-grande { display: grid; justify-items: center; padding: 6px 0; }
+.dita-grande .dita-pos { width: 190px; }
+.answers.dita-box .ans { padding: 10px 4px; min-height: 0; justify-items: center; }
+.answers.dita-box .ans .dita-pos { width: 116px; }
+.answers.dita-nomi .ans { font-size: 1.05rem; }
+.answers.dita-box .ans.ok .dita-pos .fr.on, .answers.dita-box .ans.ok .dita-pos .pv.on { fill: var(--ok-shade); stroke: var(--ok-shade); }
+.answers.dita-box .ans.bad .dita-pos .fr.on, .answers.dita-box .ans.bad .dita-pos .pv.on { fill: var(--bad-shade); stroke: var(--bad-shade); }
+.tav-esempio { justify-items: center; }
+.tav-esempio .dita-pos { width: 150px; }
+.tavola { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+.tav-nota { border: 2px solid var(--line); border-radius: 14px; padding: 8px; display: grid; justify-items: center; gap: 4px; text-align: center; background: var(--surface); }
+.tav-nota b { font-size: 0.9rem; line-height: 1.2; }
+.tav-pos { display: flex; align-items: center; gap: 6px; }
+.tav-pos .dita-pos { width: 80px; }
+.tav-o { font-weight: 800; color: var(--muted); }
+@media (max-width: 460px) { .answers.dita-box .ans .dita-pos { width: 100px; } }
+
 /* Ritmo */
 .rit, .rit-dopo { position: relative; display: grid; justify-items: center; width: 100%; }
 .stage .staff.ritmo-svg { max-width: 620px; }
@@ -270,15 +320,15 @@ body.in-sessione .top { display: none; }
 .ritmo-svg .trave { fill: var(--staff); }
 .ritmo-svg .conta { fill: var(--muted); font-family: var(--display); font-weight: 800; font-size: 12px; }
 .ritmo-svg .conta.e { font-weight: 700; font-style: italic; }
-.ritmo-svg .testina { stroke: var(--gem); stroke-width: 3; stroke-linecap: round; }
+.ritmo-svg .testina { stroke: var(--gem); stroke-width: 2.5; stroke-linecap: round; opacity: 0.55; }
 .ritmo-svg .linea-t { stroke: var(--line-strong); stroke-width: 1.5; }
 .ritmo-svg .atteso { fill: none; stroke: var(--muted); stroke-width: 2; }
 .ritmo-svg .atteso.mancato { stroke: var(--bad); stroke-dasharray: 3 2; }
 .ritmo-svg .colpo.ok { fill: var(--ok); }
 .ritmo-svg .colpo.bad { fill: var(--bad); }
-.conta-grande { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; font-family: var(--display); font-weight: 800; font-size: 4rem; color: var(--gem); text-shadow: 0 2px 0 var(--surface), 0 0 12px var(--surface); }
-.conta-grande:empty { display: none; }
-.conta-grande.batti { animation: batti 0.35s ease-out; }
+#tapTesto { display: inline-block; pointer-events: none; }
+#tapTesto.numero { font-size: 3.2rem; line-height: 1; }
+#tapTesto.batti { animation: batti 0.35s ease-out; }
 @keyframes batti { from { transform: scale(1.35); opacity: 0.4; } to { transform: scale(1); opacity: 1; } }
 .rit-legenda { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; font-size: 0.82rem; color: var(--muted); margin-top: 4px; }
 .rit-legenda span { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: -9px; vertical-align: -1px; }
