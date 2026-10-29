@@ -35,6 +35,8 @@ window.LN = window.LN || {};
     { id: "missioni", nome: "Missione compiuta", descr: "Completa tutte le missioni di un giorno", segno: "♪", n: 1, val: function () { return st().giorniMissioni || 0; } },
     { id: "segni", nome: "Occhio ai segni", descr: "Supera l'unità «Leggere i segni»", segno: "\u{1D110}", n: 1, val: function () { return unitaFatta("Leggere i segni"); } },
     { id: "alterazioni", nome: "Diesis e bemolle", descr: "Supera l'unità «Toni, semitoni e alterazioni»", segno: "♯♭", n: 1, val: function () { return unitaFatta("Toni, semitoni e alterazioni"); } },
+    { id: "classe", nome: "Orchestra unita", descr: "Completa una missione di classe", segno: "\u{1D121}", n: 1, val: function () { return st().missioniClasse || 0; } },
+    { id: "brani", nome: "Repertorio classico", descr: "Supera i quattro brani di Beethoven, Mozart e Haydn", segno: "\u{1D122}", n: 4, val: function () { return LN.TAPPE.filter(function (t) { return t.icona === "brano" && S.completata(t.key); }).length; } },
     { id: "mille", nome: "Mille note", descr: "Raggiungi 1000 XP", segno: "\u{1D160}", n: 1000, val: function () { return S.state.xp; } }
   ];
   var COLORI = ["var(--u0)", "var(--u1)", "var(--u2)", "var(--u3)"];

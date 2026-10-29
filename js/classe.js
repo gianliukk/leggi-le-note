@@ -40,6 +40,71 @@ window.LN = window.LN || {};
   }
   function num(n) { return Number(n || 0).toLocaleString("it-IT"); }
 
+  /* ---------- Missione di classe: un traguardo di XP da raggiungere tutti insieme entro domenica ---------- */
+  var XP_A_TESTA = 100, XP_MINIMO = 300, cache = null;
+  function lunedi() {
+    var d = new Date(), g = (d.getDay() + 6) % 7; d.setDate(d.getDate() - g);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function stato(lista, classe) {
+    var membri = lista.filter(function (r) { return r.classe === classe; });
+    var xp = membri.reduce(function (a, r) { return a + Number(r.xp_settimana || 0); }, 0);
+    var obiettivo = Math.max(XP_MINIMO, membri.length * XP_A_TESTA);
+    return { classe: classe, n: membri.length, attivi: membri.filter(function (r) { return Number(r.xp_settimana) > 0; }).length, xp: xp, obiettivo: obiettivo, fatta: xp >= obiettivo };
+  }
+  function classiDi(lista) {
+    var c = [];
+    lista.forEach(function (r) { if (r.classe && r.classe !== "Ex studenti" && c.indexOf(r.classe) < 0) c.push(r.classe); });
+    return c.sort();
+  }
+  function barra(st, mia) {
+    var pct = Math.min(100, Math.round(st.xp / st.obiettivo * 100)), g = giorniAllaFine();
+    return '<div class="mc-classe' + (st.fatta ? " fatta" : "") + '">' +
+      (mia ? "" : "<b>" + esc(st.classe) + "</b>") +
+      '<div class="mc-bar" role="img" aria-label="' + num(st.xp) + " XP su " + num(st.obiettivo) + '"><i style="width:' + pct + '%"></i></div>' +
+      '<div class="mc-num"><span><b>' + num(st.xp) + "</b> / " + num(st.obiettivo) + " XP</span><span>" +
+      (st.fatta ? "Traguardo raggiunto!" : "mancano " + num(st.obiettivo - st.xp) + " XP · " + (g === 1 ? "ultimo giorno" : g + " giorni") ) + "</span></div>" +
+      '<small class="muted">' + st.attivi + " su " + st.n + (st.n === 1 ? " studente ha" : " studenti hanno") + " già giocato questa settimana</small></div>";
+  }
+  /* Premio: una corona a testa, una volta a settimana, quando la propria classe arriva al traguardo. */
+  function premia(st) {
+    var sett = lunedi();
+    if (!st.fatta || S.state.classeVinta === sett) return false;
+    S.state.classeVinta = sett;
+    var data = S.state.stat = S.state.stat || {};
+    data.missioniClasse = (data.missioniClasse || 0) + 1;
+    var corona = S.corone() < S.CORONE_MAX;
+    if (corona) S.state.corone = S.corone() + 1;
+    S.salva();
+    return { corona: corona };
+  }
+  function cartaMissione(lista) {
+    var doc = A.ruolo === "docente", mia = A.ruolo === "studente" ? A.profilo.classe : null;
+    var head = '<div class="miss-head"><div><div class="eyebrow">Questa settimana</div><h2>Missione di classe</h2></div></div>';
+    if (doc) {
+      var cl = classiDi(lista);
+      if (!cl.length) return "";
+      return '<section class="missioni mc">' + head + '<p class="miss-nota">Ogni classe ha un traguardo di XP da raggiungere tutta insieme entro domenica: ' + XP_A_TESTA + " XP per studente (almeno " + XP_MINIMO + "). Chi arriva al traguardo riceve una corona.</p>" +
+        cl.map(function (c) { return barra(stato(lista, c), false); }).join("") + "</section>";
+    }
+    if (!mia || mia === "Ex studenti") return "";
+    var st = stato(lista, mia);
+    return '<section class="missioni mc">' + head.replace("<h2>Missione di classe</h2>", "<h2>Missione della " + esc(mia) + "</h2>") +
+      "<p>Tutta la classe insieme deve arrivare a <b>" + num(st.obiettivo) + " XP</b> entro domenica. Ogni tappa che giochi conta per tutti.</p>" +
+      barra(st, true) +
+      '<p class="miss-nota">' + (st.fatta ? (S.state.classeVinta === lunedi() ? "Missione compiuta: hai ricevuto il premio di questa settimana." : "Missione compiuta!") : "Premio: se la classe arriva al traguardo, ognuno riceve una corona \u{1D110}, che salva la serie se salti un giorno.") + "</p></section>";
+  }
+  /* Riquadro nel percorso: si riempie quando arrivano i dati (al massimo una richiesta al minuto). */
+  async function missionePercorso(box) {
+    if (!box || A.ruolo !== "studente") return;
+    try {
+      if (!cache || Date.now() - cache.t > 60000) cache = { t: Date.now(), dati: await A.compagni() };
+      var p = premia(stato(cache.dati, A.profilo.classe));
+      box.innerHTML = cartaMissione(cache.dati);
+      if (p && LN.avvisa) LN.avvisa(p.corona ? "La tua classe ha completato la missione: hai guadagnato una corona!" : "La tua classe ha completato la missione! Hai già il massimo di corone.");
+    } catch (e) { box.innerHTML = ""; }
+  }
+
   async function carica() {
     var box = $("#classe");
     box.innerHTML = '<p class="muted">Caricamento della classe…</p>';
@@ -172,7 +237,9 @@ window.LN = window.LN || {};
     var miaClasse = A.ruolo === "studente" ? A.profilo.classe : null;
     var g = giorniAllaFine();
 
-    var html = '<div class="seg seg-lega" role="group" aria-label="Classifica">' +
+    var pr = A.ruolo === "studente" && premia(stato(dati, miaClasse));
+    if (pr && LN.avvisa) setTimeout(function () { LN.avvisa(pr.corona ? "La tua classe ha completato la missione: hai guadagnato una corona!" : "La tua classe ha completato la missione! Hai già il massimo di corone."); }, 0);
+    var html = cartaMissione(dati) + '<div class="seg seg-lega" role="group" aria-label="Classifica">' +
       [["settimana", "Settimana"], ["anno", "Anno scolastico"], ["sempre", "Di sempre"]].map(function (m) {
         return '<button data-modo="' + m[0] + '" aria-pressed="' + (modo === m[0]) + '">' + m[1] + "</button>";
       }).join("") + "</div>";
@@ -227,5 +294,5 @@ window.LN = window.LN || {};
     if (s && $("#classe").contains(s)) { aperto = aperto === s.dataset.storico ? null : s.dataset.storico; render(); }
   });
 
-  LN.classe = { carica: carica };
+  LN.classe = { carica: carica, missionePercorso: missionePercorso };
 })(window.LN);

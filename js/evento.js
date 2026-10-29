@@ -67,7 +67,7 @@ window.LN = window.LN || {};
       LN.suono.sequenza(n, true);
     },
     /* La melodia letta in una tappa, con le sue durate. */
-    suonaMelodia: function (T) {
+    suonaMelodia: function (T) { // T: una tappa (o una sessione) con L.seq
       LN.suono.sequenza(T.L.seq.map(function (n) { return [LN.midiOf(n.d), n.b * 0.5]; }), true);
     },
     FRASI: {

@@ -111,7 +111,30 @@ window.LN = window.LN || {};
   ];
   SEG_LEVELS.forEach(function (L) { L.items = [{ sg: 1 }]; });
 
+  /* Brani a fine unità: un tema famoso letto nota per nota, con le sole note già studiate.
+     seq: [grado, durata in battiti] (le durate servono per ascoltarlo alla fine). */
+  LN.lettura = function (titolo, note, brano) {
+    var seq = note.map(function (n) { return { d: n[0], b: n[1] }; }), ds = seq.map(function (n) { return n.d; });
+    return { title: titolo, seq: seq, q: seq.length, items: seq.map(function (n) { return { d: n.d }; }),
+      ds: r(Math.min.apply(null, ds), Math.max.apply(null, ds)), letters: r(0, 6), brano: brano };
+  };
+  var BRANI = [
+    LN.lettura("Inno alla gioia", [[30, 1], [30, 1], [31, 1], [32, 1], [32, 1], [31, 1], [30, 1], [29, 1], [28, 1], [28, 1], [29, 1], [30, 1], [30, 1.5], [29, 0.5], [29, 2]],
+      { chi: "Ludwig van Beethoven", cosa: "Sinfonia n. 9, quarto movimento (1824)",
+        testo: "Beethoven la compose quando era ormai sordo. Oggi questa melodia è l'inno dell'Unione europea. Qui è trasportata in Do maggiore." }),
+    LN.lettura("La Sinfonia n. 40", [[31, 0.5], [30, 0.5], [30, 1], [31, 0.5], [30, 0.5], [30, 1], [31, 0.5], [30, 0.5], [30, 1], [35, 2], [35, 0.5], [34, 0.5], [33, 1], [33, 0.5], [32, 0.5], [31, 1], [31, 0.5], [30, 0.5], [29, 1]],
+      { chi: "Wolfgang Amadeus Mozart", cosa: "Sinfonia n. 40, primo movimento (1788)",
+        testo: "Mozart la scrisse nell'estate del 1788, insieme alle sinfonie n. 39 e n. 41. Il tema comincia con due note vicine ripetute, come un sospiro. Qui è trasportato da Sol minore a La minore, così si legge senza alterazioni." }),
+    LN.lettura("La sorpresa", [[35, 0.5], [35, 0.5], [37, 0.5], [37, 0.5], [39, 0.5], [39, 0.5], [37, 1], [38, 0.5], [38, 0.5], [36, 0.5], [36, 0.5], [34, 0.5], [34, 0.5], [32, 1]],
+      { chi: "Franz Joseph Haydn", cosa: "Sinfonia n. 94 «La sorpresa», secondo movimento (1791)",
+        testo: "Il tema si ripete piano, quasi in punta di piedi. Poi, all'improvviso, tutta l'orchestra suona un accordo fortissimo: è la sorpresa che dà il nome alla sinfonia." }),
+    LN.lettura("La Quinta di Beethoven", [[30, 0.5], [30, 0.5], [30, 0.5], [28, 3], [29, 0.5], [29, 0.5], [29, 0.5], [27, 4]],
+      { chi: "Ludwig van Beethoven", cosa: "Sinfonia n. 5, primo movimento (1808)",
+        testo: "Tre note brevi e una lunga, con il punto coronato: è forse il motivo più famoso della musica. Beethoven costruisce tutto il primo movimento su queste quattro note. Qui è trasportato da Do minore a La minore." })
+  ];
+
   LN.TRACKS = {
+    brano: { levels: BRANI, label: "Brani" },
     segni: { levels: SEG_LEVELS, label: "Segni" },
     dita: { levels: DIT_LEVELS, label: "Diteggiatura" },
     note: { levels: NOTE_LEVELS, label: "Note" },
@@ -124,14 +147,14 @@ window.LN = window.LN || {};
   LN.PERCORSO = [
     { titolo: "Le prime note", descr: "Do, Re, Mi e poi il Fa", lezione: 2, tappe: [["note", 1], ["note", 2]] },
     { titolo: "Quanto dura una nota", descr: "Semibreve, minima, semiminima, croma", lezione: 6, tappe: [["valori", 1], ["valori", 2]] },
-    { titolo: "La scala", descr: "Sol, La, Si: tutte e sette le note", lezione: 3, tappe: [["note", 3], ["note", 4], ["note", 5]] },
+    { titolo: "La scala", descr: "Sol, La, Si: tutte e sette le note", lezione: 3, tappe: [["note", 3], ["note", 4], ["note", 5], ["brano", 1]] },
     { titolo: "Orecchio attento", descr: "Ascolta: la nota sale o scende?", lezione: 8, tappe: [["ascolto", 1], ["ascolto", 2], ["ascolto", 3]] },
     { titolo: "Figure veloci", descr: "Semicroma e biscroma", lezione: 6, tappe: [["valori", 3]] },
-    { titolo: "Verso l'acuto", descr: "Dal Do al Mi acuto", lezione: 4, tappe: [["note", 6], ["note", 7]] },
+    { titolo: "Verso l'acuto", descr: "Dal Do al Mi acuto", lezione: 4, tappe: [["note", 6], ["note", 7], ["brano", 2]] },
     { titolo: "Il silenzio conta", descr: "Le pause", lezione: 7, tappe: [["valori", 4], ["valori", 5]] },
     { titolo: "Il ritmo", descr: "Batti a tempo quello che leggi", lezione: 9, tappe: [["ritmo", 1], ["ritmo", 2], ["ritmo", 3]] },
-    { titolo: "Tutto il pentagramma", descr: "Righe, spazi, note e pause", lezione: 4, tappe: [["note", 8], ["valori", 6]] },
-    { titolo: "Oltre il pentagramma", descr: "I tagli addizionali", lezione: 5, tappe: [["note", 9], ["note", 10]] },
+    { titolo: "Tutto il pentagramma", descr: "Righe, spazi, note e pause", lezione: 4, tappe: [["note", 8], ["valori", 6], ["brano", 3]] },
+    { titolo: "Oltre il pentagramma", descr: "I tagli addizionali", lezione: 5, tappe: [["note", 9], ["note", 10], ["brano", 4]] },
     { titolo: "Leggere i segni", descr: "Parti della nota, punto di valore, legature e segni", lezione: 10, tappe: [["segni", 1], ["segni", 2], ["segni", 3]] },
     { titolo: "Toni, semitoni e alterazioni", descr: "Diesis, bemolle, bequadro ed enarmoniche", lezione: 16, tappe: [["segni", 4], ["segni", 5], ["segni", 6]] },
     { titolo: "Le posizioni del clarinetto", descr: "Registro grave e note di gola", lezione: 19, tappe: [["dita", 1], ["dita", 2], ["dita", 3]] },
@@ -140,7 +163,8 @@ window.LN = window.LN || {};
   LN.TAPPE = [];
   LN.PERCORSO.forEach(function (u, ui) {
     u.tappe.forEach(function (t) {
-      LN.TAPPE.push({ unit: ui, track: t[0], level: t[1], key: t[0] + "-" + t[1], L: LN.TRACKS[t[0]].levels[t[1] - 1] });
+      // i brani si giocano come le tappe di lettura delle note, con un'icona tutta loro
+      LN.TAPPE.push({ unit: ui, track: t[0] === "brano" ? "note" : t[0], icona: t[0], level: t[1], key: t[0] + "-" + t[1], L: LN.TRACKS[t[0]].levels[t[1] - 1] });
     });
   });
 })(window.LN);

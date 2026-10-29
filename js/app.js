@@ -13,6 +13,7 @@
     ascolto: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.6 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
     dita: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="1.5" width="7" height="21" rx="3.5" fill="currentColor" opacity=".35"/><circle cx="12" cy="6" r="2.2" fill="currentColor"/><circle cx="12" cy="11" r="2.2" fill="currentColor"/><circle cx="12" cy="17" r="2.2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
     ritmo: '<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="9" rx="8.5" ry="3.2" fill="currentColor"/><path d="M3.5 9v7c0 1.8 3.8 3.2 8.5 3.2s8.5-1.4 8.5-3.2V9c0 1.8-3.8 3.2-8.5 3.2S3.5 10.8 3.5 9z" fill="currentColor" opacity=".75"/><path d="M14 2.5 18.5 7M10 2.5 5.5 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    brano: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5 20 2.5v12.2a3 3 0 1 1-2-2.8V7.2l-7 1.3v8.7a3 3 0 1 1-2-2.8z" fill="currentColor"/></svg>',
     segni: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 15a8.5 8.5 0 0 1 17 0h-2.6a5.9 5.9 0 0 0-11.8 0z" fill="currentColor"/><circle cx="12" cy="13.2" r="2.3" fill="currentColor"/></svg>',
     lock: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10.5" rx="2.5" fill="currentColor"/><path d="M8.2 10.5V7.6a3.8 3.8 0 0 1 7.6 0v2.9" fill="none" stroke="currentColor" stroke-width="2.6"/></svg>',
     flame: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.5 2c.6 3.6 6.5 5.6 6.5 12a7 7 0 0 1-14 0c0-3.2 1.9-5.4 3.3-6.6.1 2 1 3.3 2.3 3.6C10.3 7.6 10.8 4.6 12.5 2z" fill="currentColor"/></svg>',
@@ -28,6 +29,7 @@
     return s + "</span>";
   }
   var toastT = null;
+  LN.avvisa = function (msg) { toast(msg); updateChips(); LN.medaglie.controlla(); };
   function toast(msg) {
     var t = $("#toast"); t.textContent = msg; t.hidden = false;
     clearTimeout(toastT); toastT = setTimeout(function () { t.hidden = true; }, 2600);
@@ -102,7 +104,7 @@
       u.tappe.forEach(function () {
         var T = LN.TAPPE[gi], b = S.best(T.key), open = S.sbloccata(gi), done = S.completata(T.key), isCur = gi === cur;
         var cls = "node" + (!open ? " locked" : done ? " done" : "") + (isCur ? " current" : "");
-        var icon = !open ? ICON.lock : ICON[T.track];
+        var icon = !open ? ICON.lock : ICON[T.icona] || ICON[T.track];
         html += '<div class="node-wrap" style="--x:' + OFFSETS[gi % 8] + 'px">' +
           (isCur ? '<span class="start-tip">' + (b.score ? "Riprova" : "Inizia") + "</span>" : "") +
           '<button class="' + cls + '" data-tappa="' + gi + '" aria-label="' + esc(T.L.title) + (open ? "" : ", bloccata") + '">' + icon + "</button>" +
@@ -113,7 +115,8 @@
       html += "</div></section>";
     });
     html += '<p class="path-end">Hai tutto il percorso davanti: buon viaggio con il prof. Marano!</p>';
-    $("#path").innerHTML = cartaEvento() + cartaMissioni() + cartaRipasso() + html;
+    $("#path").innerHTML = cartaEvento() + cartaMissioni() + '<div id="missioneClasse"></div>' + cartaRipasso() + html;
+    LN.classe.missionePercorso($("#missioneClasse"));
     updateChips();
   }
   $("#hero").addEventListener("click", function (e) { if (e.target.closest("#heroGo")) startSession(S.corrente()); });
@@ -287,7 +290,7 @@
     if (sess.track === "dita" || sess.track === "segni") renderAnswers(); // le risposte cambiano a ogni domanda
     $("#prompt").textContent = sess.track === "segni" ? it.domanda : sess.track === "dita" ? (it.modo === "quale" ? "Quale posizione suona questa nota?" : "Che nota suona questa posizione?") :
       sess.track === "ritmo" ? "Batti questo ritmo" : sess.track === "ascolto" ? (sess.L.uguali ? "La seconda nota sale, scende o resta uguale?" : "La seconda nota sale o scende?")
-      : sess.L.seq ? "Nota " + (sess.i + 1) + " della melodia: come si chiama?" : sess.track === "note" ? "Come si chiama questa nota?" : it.rest ? "Che pausa è? Quanto vale?" : "Che figura è? Quanto vale?";
+      : sess.L.seq ? (sess.L.brano && !sess.ev ? sess.L.title + ", nota " + (sess.i + 1) + ": come si chiama?" : "Nota " + (sess.i + 1) + " della melodia: come si chiama?") : sess.track === "note" ? "Come si chiama questa nota?" : it.rest ? "Che pausa è? Quanto vale?" : "Che figura è? Quanto vale?";
     drawStage("");
     if (sess.track === "ascolto") suonaCoppia();
     $("#sessCount").textContent = (sess.i + 1) + "/" + sess.L.q;
@@ -585,9 +588,10 @@
       review = '<div class="review"><h3>Da ripassare</h3><figure class="fig">' + staffDi(keys, 32) + "<figcaption>" + esc(cap) +
         ". Tocca le note per ascoltarle. Le trovi anche nel ripasso del percorso.</figcaption></figure></div>";
     }
-    var brano = s.T.brano ? '<div class="ev-brano"><h3>Hai letto: ' + esc(s.L.title) + "</h3><p><b>" + esc(s.T.brano.chi) + "</b>, " + esc(s.T.brano.cosa) + "</p>" +
-      '<figure class="fig">' + LN.staffSVG({ notes: s.L.seq.map(function (n) { return { d: n.d, label: LN.nm(n.d) }; }), gap: 30, scale: 1.3, aria: "La melodia della tappa" }) +
-      "<figcaption>Tocca una nota per ascoltarla.</figcaption></figure><p>" + esc(s.T.brano.testo) + "</p>" +
+    var BR = s.T.brano || s.L.brano;
+    var brano = BR && s.L.seq ? '<div class="ev-brano' + (s.ev ? "" : " classico") + '"><h3>Hai letto: ' + esc(s.L.title) + "</h3><p><b>" + esc(BR.chi) + "</b>, " + esc(BR.cosa) + "</p>" +
+      '<figure class="fig">' + LN.staffSVG({ notes: s.L.seq.map(function (n) { return { d: n.d, label: LN.nm(n.d) }; }), stems: false, gap: 30, scale: 1.3, aria: "La melodia della tappa" }) +
+      "<figcaption>Tocca una nota per ascoltarla.</figcaption></figure><p>" + esc(BR.testo) + "</p>" +
       '<button class="btn3d" id="evMelodia">' + ICON.ascolto + "Ascolta la melodia</button></div>" : "";
     $("#esito").innerHTML = '<div class="esito">' +
       (s.ev ? LN.evento.prof(passed ? "mago" : "dracula", "ev-esito") : LN.gufo(passed ? "festa" : res.stelle === 1 ? "pensa" : "incoraggia")) +
@@ -609,7 +613,7 @@
     show("esito");
     $("#goPath").addEventListener("click", function () { show("percorso"); scrollToCurrent(); });
     if ($("#retry")) $("#retry").addEventListener("click", function () { startSession(gi); });
-    if ($("#evMelodia")) $("#evMelodia").addEventListener("click", function () { LN.evento.suonaMelodia(s.T); });
+    if ($("#evMelodia")) $("#evMelodia").addEventListener("click", function () { LN.evento.suonaMelodia(s); });
   }
   $("#esito").addEventListener("click", function (e) { var g = e.target.closest("g.n[data-midi]"); if (g) LN.suono.play(+g.dataset.midi, +g.dataset.dur || 1); });
   function scrollToCurrent() {
