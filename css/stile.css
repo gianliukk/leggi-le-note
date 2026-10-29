@@ -613,3 +613,48 @@ button.scudo-box { cursor: pointer; }
 .energy-line { font-weight: 800; color: var(--energy-ink); font-size: 0.95rem; }
 #chipEnergia.spenta { color: var(--muted); }
 .cls-sel { width: auto; padding: 4px 8px; font-size: 0.88rem; }
+
+/* ---------- Evento «La notte delle note» (Halloween, vedi evento.js) ---------- */
+.prof-costume { display: block; width: 100%; height: auto; }
+.evento { --notte: #1E1633; --notte-2: #33234F; --zucca: #F2801A; --zucca-s: #B85A08;
+  margin-top: 18px; border-radius: 18px; padding: 16px; color: #F3EEFF; display: grid; gap: 14px;
+  background: radial-gradient(circle at 92% 96%, rgb(255 243 196 / 0.16) 0 46px, transparent 47px), linear-gradient(160deg, var(--notte-2), var(--notte)); border-bottom: 5px solid #120C22; }
+.ev-head { display: grid; grid-template-columns: 116px minmax(0, 1fr) auto; gap: 14px; align-items: start; }
+.ev-prof { filter: drop-shadow(0 4px 0 rgb(0 0 0 / 0.35)); }
+.ev-testo { display: grid; gap: 8px; justify-items: start; }
+.evento .eyebrow { color: #FFC56B; }
+.evento h2 { font-size: 1.4rem; font-weight: 800; }
+.evento p { font-size: 0.94rem; color: #DCD3F2; }
+.evento p b { color: #FFC56B; }
+.evento .miss-conta { background: var(--zucca); color: #2A1400; }
+.ev-mezzanotte { border: 2px solid #6D5A96; border-bottom-width: 4px; background: #2A1E45; color: #F3EEFF; border-radius: 12px; padding: 6px 12px; font-weight: 800; font-size: 0.88rem; }
+.ev-mezzanotte:active { transform: translateY(2px); }
+.evento .ev-nota { font-size: 0.8rem; color: #B7AAD6; }
+.ev-nodi { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px 14px; padding-top: 4px; }
+.ev-nodo { display: grid; justify-items: center; gap: 6px; width: 96px; }
+.node.ev { --u: var(--zucca); --us: var(--zucca-s); width: 66px; height: 60px; color: #2A1400; }
+.node.ev.done { background: #FFC56B; box-shadow: 0 7px 0 #C98A1C; }
+.node.ev.locked { background: #3B2F57; box-shadow: 0 7px 0 #261C3D; color: #7D6FA3; }
+.evento .node-label { color: #DCD3F2; }
+.evento .node-stars .off { color: #5B4D80; }
+@media (max-width: 460px) { .ev-head { grid-template-columns: 84px minmax(0, 1fr); } .ev-head .miss-conta { grid-column: 2; justify-self: start; } .ev-nodo { width: 86px; } }
+
+/* sessione ed esito di una tappa dell'evento: colori della notte, teste delle note color zucca */
+body.notte {
+  --paper: #150F26; --surface: #221A3A; --ink: #F3EEFF; --muted: #B7AAD6; --line: #3E3260; --line-strong: #6D5A96;
+  --accent: #F2801A; --accent-shade: #B85A08; --accent-ink: #2A1400;
+  --ok: #45C384; --ok-shade: #2C8C5B; --ok-soft: #173426; --bad: #FF6E6E; --bad-shade: #C24848; --bad-soft: #3A1C21;
+  --locked: #3B2F57; --locked-shade: #261C3D; --locked-ink: #7D6FA3; --staff: #F3EEFF; --soft: #2C2247;
+  --key-white: #E3E7EF; --key-black: #0B0F1A; --key-label: #3B4560; color-scheme: dark;
+}
+body.notte .sheet.ok .sheet-text strong { color: var(--ok); }
+body.notte .sheet.bad .sheet-text strong { color: var(--bad); }
+body.notte .stage .hd { fill: #F2801A; stroke: #FFC56B; stroke-width: 1; }
+.sheet-owl .prof-costume { max-height: 76px; width: auto; margin: 0 auto; }
+.modal-card .prof-costume { width: 110px; }
+.esito .ev-esito { width: 190px; }
+.ev-brano { width: 100%; text-align: left; display: grid; gap: 8px; background: var(--surface); border: 2px solid var(--line); border-left: 6px solid #F2801A; border-radius: 16px; padding: 14px 16px; }
+.ev-brano h3 { font-size: 1.1rem; }
+.ev-brano p { color: var(--muted); }
+.ev-brano .btn3d { justify-self: start; display: inline-flex; align-items: center; gap: 8px; }
+.ev-brano .btn3d svg { width: 20px; height: 20px; }

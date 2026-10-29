@@ -44,7 +44,7 @@ window.LN = window.LN || {};
       var d = new Date(), oggi = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
       var mie = S.state.medaglie = S.state.medaglie || {}, nuove = [];
       LN.MEDAGLIE.forEach(function (m) {
-        if (!mie[m.id] && m.val() >= m.n) { mie[m.id] = oggi; nuove.push(m); }
+        if (!mie[m.id] && (!m.nascosta || !m.nascosta()) && m.val() >= m.n) { mie[m.id] = oggi; nuove.push(m); }
       });
       if (nuove.length) S.salva();
       return nuove;
@@ -52,7 +52,9 @@ window.LN = window.LN || {};
     /* [{ m, data, val }] nell'ordine dell'elenco */
     elenco: function () {
       var mie = S.state.medaglie || {};
-      return LN.MEDAGLIE.map(function (m) { return { m: m, data: mie[m.id] || null, val: Math.min(m.n, m.val()) }; });
+      // Le medaglie degli eventi a tempo si vedono durante l'evento o, dopo, solo se sono state prese.
+      return LN.MEDAGLIE.filter(function (m) { return mie[m.id] || !m.nascosta || !m.nascosta(); })
+        .map(function (m) { return { m: m, data: mie[m.id] || null, val: Math.min(m.n, m.val()) }; });
     },
     icona: function (m, presa) {
       return '<span class="medaglia' + (presa ? "" : " spenta") + '" style="--mc:' + m.col + (m.sc ? ";--ms:" + m.sc : "") + (m.sy ? ";--my:" + m.sy + "em" : "") + '" aria-hidden="true"><span>' + m.segno + "</span></span>";

@@ -112,12 +112,18 @@
       html += "</div></section>";
     });
     html += '<p class="path-end">Hai tutto il percorso davanti: buon viaggio con il prof. Marano!</p>';
-    $("#path").innerHTML = cartaMissioni() + cartaRipasso() + html;
+    $("#path").innerHTML = cartaEvento() + cartaMissioni() + cartaRipasso() + html;
     updateChips();
   }
   $("#hero").addEventListener("click", function (e) { if (e.target.closest("#heroGo")) startSession(S.corrente()); });
   $("#path").addEventListener("click", function (e) {
     if (e.target.closest("[data-ripasso]")) { startSession("ripasso"); return; }
+    if (e.target.closest("[data-mezzanotte]")) { LN.evento.mezzanotte(); return; }
+    var ev = e.target.closest("[data-evento]");
+    if (ev) {
+      if (!LN.evento.aperta(+ev.dataset.evento)) { toast("Supera prima la tappa precedente con almeno due stelle."); return; }
+      startSession("ev:" + ev.dataset.evento); return;
+    }
     var nr = e.target.closest(".ripasso-card g.n[data-midi]");
     if (nr) { LN.suono.play(+nr.dataset.midi, +nr.dataset.dur || 1); return; }
     var g = e.target.closest("[data-lesson]");
@@ -199,6 +205,25 @@
       '<button class="btn3d primary" data-ripasso="1">Ripassa</button></section>';
   }
 
+  /* ---------- Evento a tempo (vedi evento.js) ---------- */
+  function cartaEvento() {
+    if (!LN.evento.attivo()) return "";
+    var EV = LN.evento.dati, f = LN.evento.fatte(), p = EV.al.split("-");
+    return '<section class="evento"><div class="ev-head">' + LN.evento.prof("dracula", "ev-prof") +
+      '<div class="ev-testo"><div class="eyebrow">Speciale Halloween · fino all\'' + (+p[2]) + "/" + (+p[1]) + "</div><h2>" + EV.titolo + "</h2>" +
+      "<p>Il prof. Marano si è travestito! Leggi le melodie più paurose della musica classica, ascolta i fantasmi e bussa a tempo per il dolcetto. " +
+      "Chi supera tutte le tappe vince la medaglia <b>Zucca d\'oro</b>.</p>" +
+      '<button class="ev-mezzanotte" data-mezzanotte="1">\u{1F570}\uFE0F Ascolta la mezzanotte</button>' +
+      '<p class="ev-nota">Così comincia la <i>Danse macabre</i> di Saint-Saëns (1874): l\'arpa suona dodici volte il Re, è mezzanotte e gli scheletri escono a ballare.</p></div>' +
+      '<span class="miss-conta">' + f + "/" + EV.tappe.length + "</span></div>" +
+      '<div class="ev-nodi">' + EV.tappe.map(function (T, i) {
+        var b = S.best(T.key), open = LN.evento.aperta(i), done = S.completata(T.key);
+        return '<div class="ev-nodo"><button class="node ev' + (!open ? " locked" : done ? " done" : "") + '" data-evento="' + i + '" aria-label="' + esc(T.L.title) + (open ? "" : ", bloccata") + '">' +
+          (open ? ICON[T.track] : ICON.lock) + "</button>" + (b.stars || done ? starRow(b.stars, "node-stars") : "") +
+          '<span class="node-label">' + esc(T.L.title) + "</span></div>";
+      }).join("") + "</div></section>";
+  }
+
   /* ---------- Missioni del giorno ---------- */
   function testoMissione(x) {
     return {
@@ -228,11 +253,12 @@
   /* ---------- Sessione ---------- */
   var sess = null;
   function startSession(gi) {
-    var rip = gi === "ripasso", en = S.energia();
-    var T = rip ? { key: "ripasso", track: null, L: lezioneRipasso() } : LN.TAPPE[gi];
+    var rip = gi === "ripasso", ev = String(gi).indexOf("ev:") === 0, en = S.energia();
+    var T = rip ? { key: "ripasso", track: null, L: lezioneRipasso() } : ev ? LN.evento.tappa(+gi.slice(3)) : LN.TAPPE[gi];
     if (rip && !T.L.items.length) { toast("Non hai errori da ripassare: bravo!"); return; }
     if (!en.illimitata && en.valore === 0) toast("Energia finita: questa tappa non darà XP. Si ricarica tra " + minuti(en.prossima) + ".");
-    sess = { gi: gi, rip: rip, T: T, track: T.track, L: T.L, i: 0, ok: 0, misses: {}, esiti: [], extra: rip ? [] : erroriDellaTappa(T),
+    notte = ev;
+    sess = { gi: gi, rip: rip, ev: ev, T: T, track: T.track, L: T.L, i: 0, ok: 0, misses: {}, esiti: [], extra: rip || ev ? [] : erroriDellaTappa(T),
       fila: 0, filaMax: 0, ms: 0, qStart: 0, cur: null, curKey: null, locked: false, timer: null };
     show("sessione");
     if (!rip) renderAnswers();
@@ -246,7 +272,9 @@
     // Nelle tappe normali, una domanda su quattro (circa) ripropone un errore da ripassare.
     var pool = sess.extra.length && Math.random() < 0.25 ? sess.extra : sess.L.items;
     var it, guard = 0;
-    do { it = pick(pool); guard++; } while (chiave(it) === sess.curKey && guard < 30);
+    // Le melodie dell'evento si leggono nota per nota, in ordine.
+    if (sess.L.seq) it = { d: sess.L.seq[sess.i].d };
+    else do { it = pick(pool); guard++; } while (chiave(it) === sess.curKey && guard < 30);
     if (sess.rip && trackDi(it) !== sess.track) { sess.track = trackDi(it); renderAnswers(); }
     sess.curKey = chiave(it);
     if (sess.track === "valori") it = { v: it.v, rest: it.rest, d: it.rest ? 34 : 29 + Math.floor(Math.random() * 9) };
@@ -257,7 +285,7 @@
     if (sess.track === "dita") renderAnswers(); // le risposte cambiano a ogni domanda
     $("#prompt").textContent = sess.track === "dita" ? (it.modo === "quale" ? "Quale posizione suona questa nota?" : "Che nota suona questa posizione?") :
       sess.track === "ritmo" ? "Batti questo ritmo" : sess.track === "ascolto" ? (sess.L.uguali ? "La seconda nota sale, scende o resta uguale?" : "La seconda nota sale o scende?")
-      : sess.track === "note" ? "Come si chiama questa nota?" : it.rest ? "Che pausa è? Quanto vale?" : "Che figura è? Quanto vale?";
+      : sess.L.seq ? "Nota " + (sess.i + 1) + " della melodia: come si chiama?" : sess.track === "note" ? "Come si chiama questa nota?" : it.rest ? "Che pausa è? Quanto vale?" : "Che figura è? Quanto vale?";
     drawStage("");
     if (sess.track === "ascolto") suonaCoppia();
     $("#sessCount").textContent = (sess.i + 1) + "/" + sess.L.q;
@@ -428,8 +456,9 @@
     drawStage(ok ? "ok" : "bad");
     var sh = $("#sheet");
     sh.className = "sheet " + (ok ? "ok" : "bad");
-    $("#sheetOwl").innerHTML = LN.gufo(ok ? "felice" : "incoraggia");
-    $("#sheetTitle").textContent = pick(ok ? LN.FRASI.ok : LN.FRASI.bad);
+    var frasi = sess.ev ? LN.evento.FRASI : LN.FRASI;
+    $("#sheetOwl").innerHTML = sess.ev ? LN.evento.prof(ok ? "zucca" : "dracula") : LN.gufo(ok ? "felice" : "incoraggia");
+    $("#sheetTitle").textContent = pick(ok ? frasi.ok : frasi.bad);
     $("#sheetMsg").textContent = describe(it);
     $("#sheetBtn").className = "btn3d " + (ok ? "go-ok" : "go-bad");
     sh.hidden = false;
@@ -484,7 +513,7 @@
     if (sess.track === "note" && map[k] != null && keys.indexOf(map[k]) > -1) { e.preventDefault(); answer(map[k]); }
   });
   $("#exitBtn").addEventListener("click", function () {
-    $("#exitOwl").innerHTML = LN.gufo("incoraggia");
+    $("#exitOwl").innerHTML = sess && sess.ev ? LN.evento.prof("dracula") : LN.gufo("incoraggia");
     $("#exitModal").hidden = false; $("#stayBtn").focus();
   });
   $("#stayBtn").addEventListener("click", function () { $("#exitModal").hidden = true; });
@@ -500,6 +529,7 @@
   function finish() {
     var s = sess, q = s.L.q;
     var primaRipasso = S.daRipassare().length;
+    var evPrima = s.ev && S.completata(s.T.key);
     S.aggiornaErrori(s.esiti);
     var restano = S.daRipassare().length;
     var res = S.registra(s.T.key, s.ok, q, Math.round(s.ms), s.rip);
@@ -517,7 +547,9 @@
       return '<p><span class="miss-ic">' + ICON.check + "</span>Missione completata: " + testoMissione(x).toLowerCase() + " <b>+" + S.MISSIONE_XP + " XP</b></p>";
     }).join("") + (mis.tutte ? '<p class="miss-tutte">Tutte le missioni di oggi completate: energia ricaricata al massimo!</p>' : "") + "</div>" : "";
     var pct = Math.round(s.ok / q * 100), passed = res.stelle >= 2;
-    var nextT = s.rip ? null : LN.TAPPE[s.gi + 1];
+    var nextT = s.rip ? null : s.ev ? LN.evento.tappa(s.T.idx + 1) : LN.TAPPE[s.gi + 1];
+    // Nell'evento la tappa dopo si apre la prima volta che si supera questa.
+    var evApre = s.ev && passed && nextT && !evPrima;
     var title, sub;
     if (s.rip) {
       var sistemati = Math.max(0, primaRipasso - restano);
@@ -525,9 +557,10 @@
       sub = (sistemati ? "Hai tolto dal ripasso " + (sistemati === 1 ? "1 nota o figura" : sistemati + " note o figure") + ". " : "") +
         (restano ? "Te ne " + (restano === 1 ? "resta 1" : "restano " + restano) + " da ripassare: ognuna esce quando la indovini " + S.RIPASSO_VOLTE + " volte." : "Non hai più nulla da ripassare: complimenti!");
     } else {
-      title = passed ? (res.sblocco ? "Tappa superata!" : "Ottimo lavoro!") : "Ci sei quasi!";
+      title = passed ? (res.sblocco || evApre ? "Tappa superata!" : "Ottimo lavoro!") : "Ci sei quasi!";
+      if (s.ev && passed && !nextT && !evPrima) title = LN.evento.fatte() === LN.evento.dati.tappe.length ? "Notte superata!" : "Tappa superata!";
       sub = passed
-        ? (res.sblocco && nextT ? "Si apre la tappa successiva: " + nextT.L.title + "." : res.record ? "Nuovo record personale in questa tappa." : "Un ottimo ripasso.")
+        ? ((res.sblocco || evApre) && nextT ? "Si apre la tappa successiva: " + nextT.L.title + (/[?!]$/.test(nextT.L.title) ? "" : ".") : res.record ? "Nuovo record personale in questa tappa." : "Un ottimo ripasso.")
         : "Per superare la tappa servono almeno " + Math.ceil(q * 0.8) + " risposte esatte su " + q + ". Ne hai date " + s.ok + ": riprova, ce la puoi fare.";
     }
     var ORD = { n: 0, f: 1, p: 2 };
@@ -537,8 +570,12 @@
       review = '<div class="review"><h3>Da ripassare</h3><figure class="fig">' + staffDi(keys, 32) + "<figcaption>" + esc(cap) +
         ". Tocca le note per ascoltarle. Le trovi anche nel ripasso del percorso.</figcaption></figure></div>";
     }
+    var brano = s.T.brano ? '<div class="ev-brano"><h3>Hai letto: ' + esc(s.L.title) + "</h3><p><b>" + esc(s.T.brano.chi) + "</b>, " + esc(s.T.brano.cosa) + "</p>" +
+      '<figure class="fig">' + LN.staffSVG({ notes: s.L.seq.map(function (n) { return { d: n.d, label: LN.nm(n.d) }; }), gap: 30, scale: 1.3, aria: "La melodia della tappa" }) +
+      "<figcaption>Tocca una nota per ascoltarla.</figcaption></figure><p>" + esc(s.T.brano.testo) + "</p>" +
+      '<button class="btn3d" id="evMelodia">' + ICON.ascolto + "Ascolta la melodia</button></div>" : "";
     $("#esito").innerHTML = '<div class="esito">' +
-      LN.gufo(passed ? "festa" : res.stelle === 1 ? "pensa" : "incoraggia") +
+      (s.ev ? LN.evento.prof(passed ? "mago" : "dracula", "ev-esito") : LN.gufo(passed ? "festa" : res.stelle === 1 ? "pensa" : "incoraggia")) +
       "<h1>" + title + "</h1>" + starRow(res.stelle, "big-stars") +
       '<p class="sub">' + sub + "</p>" +
       '<div class="tiles">' +
@@ -549,7 +586,7 @@
       (res.senzaEnergia ? '<p class="energy-line">Energia finita: la tappa vale per stelle e serie, ma non per gli XP. La prossima carica arriva tra ' + minuti(S.energia().prossima) + ".</p>" :
        res.molt > 1 ? '<p class="bonus-line">Bonus continuità XP ×' + String(res.molt).replace(".", ",") + ": +" + (res.xp - res.base) + " XP extra!</p>" : bonusHint(res.serie)) +
       (res.coronaNuova ? '<p class="corona-line"><span class="corona-ic">\u{1D110}</span>' + res.serie + " giorni di fila: hai guadagnato una corona! Se un giorno non riesci ad allenarti, salverà la tua serie.</p>" : "") +
-      medaglieHtml + missioniHtml + review +
+      medaglieHtml + missioniHtml + brano + review +
       '<div class="esito-actions"><button class="btn3d primary" id="goPath">Continua</button>' +
       (s.rip ? (restano ? '<button class="btn-plain" id="retry">Ripassa ancora</button>' : "") : '<button class="btn-plain" id="retry">Rifai la tappa</button>') + "</div></div>";
     var gi = s.gi;
@@ -557,6 +594,7 @@
     show("esito");
     $("#goPath").addEventListener("click", function () { show("percorso"); scrollToCurrent(); });
     if ($("#retry")) $("#retry").addEventListener("click", function () { startSession(gi); });
+    if ($("#evMelodia")) $("#evMelodia").addEventListener("click", function () { LN.evento.suonaMelodia(s.T); });
   }
   $("#esito").addEventListener("click", function (e) { var g = e.target.closest("g.n[data-midi]"); if (g) LN.suono.play(+g.dataset.midi, +g.dataset.dur || 1); });
   function scrollToCurrent() {
@@ -654,11 +692,14 @@
   });
 
   /* ---------- Navigazione ---------- */
+  var notte = false; // tappa dell'evento in corso: sessione ed esito con i colori della notte
   var VIEWS = ["accesso", "percorso", "classe", "lezioni", "profilo", "docente", "sessione", "esito"];
   var TABS = ["percorso", "classe", "lezioni", "profilo", "docente"];
   function show(v) {
     VIEWS.forEach(function (x) { $("#v-" + x).hidden = x !== v; });
     document.body.classList.toggle("in-sessione", v === "sessione");
+    if (v !== "sessione" && v !== "esito") notte = false;
+    document.body.classList.toggle("notte", notte);
     document.body.classList.toggle("no-auth", v === "accesso");
     $("#tab-docente").hidden = LN.account.ruolo !== "docente";
     TABS.forEach(function (x) {
