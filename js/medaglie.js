@@ -33,6 +33,8 @@ window.LN = window.LN || {};
     { id: "sinfonia", nome: "Sinfonia", descr: "Allenati 30 giorni di fila", segno: "\u{1D15D}", sc: 1.4, sy: -0.22, n: 30, val: serieMax },
     { id: "ritornello", nome: "Ritornello", descr: "Fai 5 ripassi degli errori", segno: "\u{1D107}", n: 5, val: function () { return st().ripassi || 0; } },
     { id: "missioni", nome: "Missione compiuta", descr: "Completa tutte le missioni di un giorno", segno: "♪", n: 1, val: function () { return st().giorniMissioni || 0; } },
+    { id: "segni", nome: "Occhio ai segni", descr: "Supera l'unità «Leggere i segni»", segno: "\u{1D110}", n: 1, val: function () { return unitaFatta("Leggere i segni"); } },
+    { id: "alterazioni", nome: "Diesis e bemolle", descr: "Supera l'unità «Toni, semitoni e alterazioni»", segno: "♯♭", n: 1, val: function () { return unitaFatta("Toni, semitoni e alterazioni"); } },
     { id: "mille", nome: "Mille note", descr: "Raggiungi 1000 XP", segno: "\u{1D160}", n: 1000, val: function () { return S.state.xp; } }
   ];
   var COLORI = ["var(--u0)", "var(--u1)", "var(--u2)", "var(--u3)"];

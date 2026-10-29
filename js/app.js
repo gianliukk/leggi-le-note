@@ -137,10 +137,10 @@
 
   /* ---------- Ripasso degli errori ---------- */
   /* Chiavi come in progressi.js: "n30" nota, "f3" figura, "p3" pausa. */
-  function trackDi(it) { return it.dt != null ? "dita" : it.r != null ? "ritmo" : it.a != null ? "ascolto" : it.v != null ? "valori" : "note"; }
+  function trackDi(it) { return it.sg != null ? "segni" : it.dt != null ? "dita" : it.r != null ? "ritmo" : it.a != null ? "ascolto" : it.v != null ? "valori" : "note"; }
   function chiave(it) {
     var t = trackDi(it);
-    return t === "dita" ? "dt" : t === "ritmo" ? "r" : t === "ascolto" ? "a" + it.a + "-" + it.b : t === "note" ? "n" + it.d : (it.rest ? "p" : "f") + it.v;
+    return t === "segni" ? "sg" : t === "dita" ? "dt" : t === "ritmo" ? "r" : t === "ascolto" ? "a" + it.a + "-" + it.b : t === "note" ? "n" + it.d : (it.rest ? "p" : "f") + it.v;
   }
   /* Solo la lettura di note e figure entra nel ripasso degli errori. */
   function daLeggere(track) { return track === "note" || track === "valori"; }
@@ -280,10 +280,11 @@
     if (sess.track === "valori") it = { v: it.v, rest: it.rest, d: it.rest ? 34 : 29 + Math.floor(Math.random() * 9) };
     if (sess.track === "ritmo") { LN.ritmo.ferma(); it = LN.ritmo.battuta(sess.L, sess.cur && sess.cur.chiave); sess.ritRes = null; }
     if (sess.track === "dita") it = LN.dita.domanda(sess.L, sess.cur && sess.cur.n && sess.cur.n.id);
+    if (sess.track === "segni") it = LN.segni.domanda(sess.L, sess.cur && sess.cur.id);
     sess.cur = it; sess.locked = false;
     if (sess.track === "ritmo") statoRitmo("");
-    if (sess.track === "dita") renderAnswers(); // le risposte cambiano a ogni domanda
-    $("#prompt").textContent = sess.track === "dita" ? (it.modo === "quale" ? "Quale posizione suona questa nota?" : "Che nota suona questa posizione?") :
+    if (sess.track === "dita" || sess.track === "segni") renderAnswers(); // le risposte cambiano a ogni domanda
+    $("#prompt").textContent = sess.track === "segni" ? it.domanda : sess.track === "dita" ? (it.modo === "quale" ? "Quale posizione suona questa nota?" : "Che nota suona questa posizione?") :
       sess.track === "ritmo" ? "Batti questo ritmo" : sess.track === "ascolto" ? (sess.L.uguali ? "La seconda nota sale, scende o resta uguale?" : "La seconda nota sale o scende?")
       : sess.L.seq ? "Nota " + (sess.i + 1) + " della melodia: come si chiama?" : sess.track === "note" ? "Come si chiama questa nota?" : it.rest ? "Che pausa è? Quanto vale?" : "Che figura è? Quanto vale?";
     drawStage("");
@@ -348,6 +349,7 @@
 
   function drawStage(cls) {
     var it = sess.cur;
+    if (sess.track === "segni") { $("#stage").innerHTML = '<div class="segni-stage' + (cls ? " " + cls : "") + '">' + it.stage + "</div>"; return; }
     if (sess.track === "dita") {
       $("#stage").innerHTML = it.modo === "quale"
         ? LN.staffSVG({ notes: [{ d: it.sp[0], acc: it.sp[1], v: 0, cls: cls }], width: 170, startX: 82, gap: 40, play: false, scale: 2.3, aria: "Nota da suonare" })
@@ -369,7 +371,7 @@
     }
     $("#stage").innerHTML = LN.staffSVG({ notes: [{ d: it.d, v: it.v, rest: it.rest, cls: cls }], width: 170, startX: 82, gap: 40, play: false, scale: 2.5, aria: "Figura da riconoscere" });
   }
-  function keysOf() { if (sess.track === "dita") return sess.cur ? sess.cur.opzioni.map(function (o, i) { return i; }) : []; return sess.track === "ascolto" ? sess.L.keys : sess.track === "note" ? sess.L.letters : sess.L.vs; }
+  function keysOf() { if (sess.track === "dita" || sess.track === "segni") return sess.cur ? sess.cur.opzioni.map(function (o, i) { return i; }) : []; return sess.track === "ascolto" ? sess.L.keys : sess.track === "note" ? sess.L.letters : sess.L.vs; }
   var DIREZIONI = [["↗", "Sale"], ["↘", "Scende"], ["=", "Uguale"]];
   function pianoMode() { return sess && sess.track === "note" && S.set.mode === "tastiera"; }
   function renderAnswers() {
@@ -377,6 +379,16 @@
     box.classList.toggle("rit-box", sess.track === "ritmo");
     box.classList.toggle("dita-box", sess.track === "dita");
     box.classList.toggle("dita-nomi", sess.track === "dita" && sess.cur && sess.cur.modo === "nome");
+    box.classList.toggle("segni-box", sess.track === "segni");
+    if (sess.track === "segni") {
+      if (!sess.cur) { box.innerHTML = ""; return; }
+      box.hidden = false; $("#pianoWrap").hidden = true;
+      box.classList.toggle("segni-fig", !!sess.cur.figure);
+      box.style.setProperty("--cols", sess.cur.cols || 2);
+      box.innerHTML = sess.cur.opzioni.map(function (o, k) { return '<button class="ans" data-k="' + k + '" id="ans-' + k + '">' + o + "</button>"; }).join("");
+      $("#hint").innerHTML = 'Tasti rapidi: <span class="kbd">1</span>–<span class="kbd">' + sess.cur.opzioni.length + '</span> · <span class="kbd">Invio</span> per continuare';
+      return;
+    }
     if (sess.track === "dita") {
       if (!sess.cur) { box.innerHTML = ""; return; }
       box.hidden = false; $("#pianoWrap").hidden = true;
@@ -424,6 +436,7 @@
     var p = $("#piano"); p.style.setProperty("--n", N); p.innerHTML = html;
   }
   function describe(it) {
+    if (sess.track === "segni") return it.spiega;
     if (sess.track === "dita") return LN.dita.descrivi(it);
     if (sess.track === "ritmo") return LN.ritmo.descrivi(sess.ritRes);
     if (sess.track === "ascolto") {
@@ -440,7 +453,8 @@
     sess.ms += performance.now() - sess.qStart;
     sess.i++;
     $("#pFill").style.width = (sess.i / sess.L.q * 100) + "%";
-    if (sess.track === "dita") LN.suono.play(LN.dita.reale(it.n), 1.2);
+    if (sess.track === "segni") { if (it.suono) LN.suono.sequenza(it.suono, true); }
+    else if (sess.track === "dita") LN.suono.play(LN.dita.reale(it.n), 1.2);
     else if (sess.track === "ritmo") { /* il suono c'è già stato */ }
     else if (sess.track === "ascolto") { if (!ok) suonaCoppia(); }
     else if (sess.track === "note") LN.suono.play(LN.midiOf(it.d), 0.9);
@@ -468,7 +482,7 @@
   function answer(k) {
     if (!sess || sess.locked) return;
     var it = sess.cur, ok;
-    var right = sess.track === "dita" ? it.giusta : sess.track === "ascolto" ? (it.b > it.a ? 0 : it.b < it.a ? 1 : 2) : sess.track === "note" ? it.d % 7 : it.v;
+    var right = sess.track === "dita" || sess.track === "segni" ? it.giusta : sess.track === "ascolto" ? (it.b > it.a ? 0 : it.b < it.a ? 1 : 2) : sess.track === "note" ? it.d % 7 : it.v;
     ok = k === right;
     var b = $("#ans-" + k); if (b) b.classList.add(ok ? "ok" : "bad");
     if (!ok) { var c = $("#ans-" + right); if (c) c.classList.add("ok"); }

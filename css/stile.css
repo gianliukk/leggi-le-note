@@ -691,3 +691,13 @@ body.notte .stage .hd { fill: #F2801A; stroke: #FFC56B; stroke-width: 1; }
 .parti-nota .pn-gambo { stroke: var(--staff); stroke-width: 2.8; }
 .parti-nota .pn-filo { stroke: var(--accent-shade); stroke-width: 1.4; stroke-dasharray: 3 3; }
 .parti-nota .pn-nome { fill: var(--accent-shade); font-family: var(--body); font-size: 15px; font-weight: 700; }
+
+/* ---------- Esercizi sui segni (segni.js) ---------- */
+.segni-stage { display: grid; justify-items: center; gap: 6px; width: 100%; }
+.segni-stage .parti-nota.grande { width: 200px; }
+.parti-nota .evid { fill: var(--accent); stroke: var(--accent-shade); stroke-width: 1.5; }
+.parti-nota .pn-gambo.evid { stroke: var(--accent); stroke-width: 5; }
+.seg-grande { font-family: var(--display); font-weight: 800; font-size: 3rem; line-height: 1.2; padding: 18px 0; font-variant-numeric: tabular-nums; }
+.answers.segni-box .ans { font-size: 1.1rem; padding: 8px 10px; }
+.answers.segni-fig .ans { padding: 6px 4px; }
+.answers.segni-fig .ans svg { width: 100px; height: auto; }

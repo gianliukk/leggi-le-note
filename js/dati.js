@@ -100,7 +100,19 @@ window.LN = window.LN || {};
   ];
   DIT_LEVELS.forEach(function (L) { L.items = [{ dt: 1 }]; });
 
+  /* Segni musicali: domande create da segni.js (gen = generatore). */
+  var SEG_LEVELS = [
+    { title: "Le parti della nota", gen: "parti", q: 8 },
+    { title: "Il punto di valore", gen: "punto", q: 10 },
+    { title: "Che segno è?", gen: "segno", q: 10 },
+    { title: "Tono o semitono?", gen: "tono", q: 10 },
+    { title: "Fisse o transitorie", gen: "alterazioni", q: 12 },
+    { title: "Le note enarmoniche", gen: "enarmoniche", q: 8 }
+  ];
+  SEG_LEVELS.forEach(function (L) { L.items = [{ sg: 1 }]; });
+
   LN.TRACKS = {
+    segni: { levels: SEG_LEVELS, label: "Segni" },
     dita: { levels: DIT_LEVELS, label: "Diteggiatura" },
     note: { levels: NOTE_LEVELS, label: "Note" },
     valori: { levels: VAL_LEVELS, label: "Valori" },
@@ -120,6 +132,8 @@ window.LN = window.LN || {};
     { titolo: "Il ritmo", descr: "Batti a tempo quello che leggi", lezione: 9, tappe: [["ritmo", 1], ["ritmo", 2], ["ritmo", 3]] },
     { titolo: "Tutto il pentagramma", descr: "Righe, spazi, note e pause", lezione: 4, tappe: [["note", 8], ["valori", 6]] },
     { titolo: "Oltre il pentagramma", descr: "I tagli addizionali", lezione: 5, tappe: [["note", 9], ["note", 10]] },
+    { titolo: "Leggere i segni", descr: "Parti della nota, punto di valore, legature e segni", lezione: 10, tappe: [["segni", 1], ["segni", 2], ["segni", 3]] },
+    { titolo: "Toni, semitoni e alterazioni", descr: "Diesis, bemolle, bequadro ed enarmoniche", lezione: 16, tappe: [["segni", 4], ["segni", 5], ["segni", 6]] },
     { titolo: "Le posizioni del clarinetto", descr: "Registro grave e note di gola", lezione: 19, tappe: [["dita", 1], ["dita", 2], ["dita", 3]] },
     { titolo: "Posizioni acute", descr: "Registro acuto e sovracuto", lezione: 19, tappe: [["dita", 4], ["dita", 5], ["dita", 6]] }
   ];
