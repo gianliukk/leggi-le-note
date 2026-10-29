@@ -658,3 +658,36 @@ body.notte .stage .hd { fill: #F2801A; stroke: #FFC56B; stroke-width: 1; }
 .ev-brano p { color: var(--muted); }
 .ev-brano .btn3d { justify-self: start; display: inline-flex; align-items: center; gap: 8px; }
 .ev-brano .btn3d svg { width: 20px; height: 20px; }
+
+/* ---------- Lezioni sui segni musicali ---------- */
+.staff .punto, .staff .rit-p { fill: var(--staff); }
+.staff .corona { fill: none; stroke: var(--staff); stroke-width: 1.7; }
+.staff .leg { fill: var(--staff); stroke: var(--staff); stroke-width: 0.7; stroke-linejoin: round; }
+.staff .respiro { fill: var(--staff); font-family: Georgia, "Times New Roman", serif; font-size: 26px; font-weight: 700; }
+.lesson > .ascolta-btn { justify-self: start; }
+.prova { background: var(--soft); border-radius: 12px; padding: 10px 14px; max-width: 64ch; }
+.prova summary { cursor: pointer; font-weight: 700; }
+.prova summary b { color: var(--accent-shade); }
+.prova p { margin-top: 6px; }
+.prova[open] summary::after { content: ""; }
+.lista-alt { list-style: none; padding: 0; display: grid; gap: 8px; }
+.lista-alt li { display: flex; align-items: center; gap: 12px; }
+.alt-seg { flex: none; width: 40px; height: 40px; border-radius: 10px; background: var(--soft); display: grid; place-items: center; font-family: var(--music); font-size: 1.6rem; }
+.tastiera-lez { width: min(100%, 420px); height: auto; }
+.tastiera-lez .tk { cursor: pointer; }
+.tastiera-lez .tk-b rect { fill: var(--key-white); stroke: var(--line-strong); stroke-width: 1; }
+.tastiera-lez .tk-n rect { fill: var(--key-black); }
+.tastiera-lez text { fill: var(--key-label); font-family: var(--body); font-size: 10px; font-weight: 700; }
+.tastiera-lez .tk-t rect { fill: var(--gem); }
+.tastiera-lez .tk-s rect { fill: var(--accent); }
+.tastiera-lez .tk-t text, .tastiera-lez .tk-s text { fill: #17213B; }
+.lg-tono, .lg-semi { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin: 0 5px 0 8px; }
+.lg-tono { background: var(--gem); }
+.lg-semi { background: var(--accent); }
+.lesson h3 { font-size: 1.2rem; font-weight: 800; margin-top: 6px; }
+.lista-parti { display: grid; gap: 6px; padding-left: 1.2em; max-width: 64ch; }
+.parti-nota { width: min(100%, 330px); height: auto; }
+.parti-nota .pn-testa, .parti-nota .pn-codetta { fill: var(--staff); }
+.parti-nota .pn-gambo { stroke: var(--staff); stroke-width: 2.8; }
+.parti-nota .pn-filo { stroke: var(--accent-shade); stroke-width: 1.4; stroke-dasharray: 3 3; }
+.parti-nota .pn-nome { fill: var(--accent-shade); font-family: var(--body); font-size: 15px; font-weight: 700; }

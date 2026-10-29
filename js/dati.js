@@ -120,8 +120,8 @@ window.LN = window.LN || {};
     { titolo: "Il ritmo", descr: "Batti a tempo quello che leggi", lezione: 9, tappe: [["ritmo", 1], ["ritmo", 2], ["ritmo", 3]] },
     { titolo: "Tutto il pentagramma", descr: "Righe, spazi, note e pause", lezione: 4, tappe: [["note", 8], ["valori", 6]] },
     { titolo: "Oltre il pentagramma", descr: "I tagli addizionali", lezione: 5, tappe: [["note", 9], ["note", 10]] },
-    { titolo: "Le posizioni del clarinetto", descr: "Registro grave e note di gola", lezione: 10, tappe: [["dita", 1], ["dita", 2], ["dita", 3]] },
-    { titolo: "Posizioni acute", descr: "Registro acuto e sovracuto", lezione: 10, tappe: [["dita", 4], ["dita", 5], ["dita", 6]] }
+    { titolo: "Le posizioni del clarinetto", descr: "Registro grave e note di gola", lezione: 19, tappe: [["dita", 1], ["dita", 2], ["dita", 3]] },
+    { titolo: "Posizioni acute", descr: "Registro acuto e sovracuto", lezione: 19, tappe: [["dita", 4], ["dita", 5], ["dita", 6]] }
   ];
   LN.TAPPE = [];
   LN.PERCORSO.forEach(function (u, ui) {

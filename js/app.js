@@ -620,6 +620,7 @@
   $("#lesson").addEventListener("click", function (e) {
     var go = e.target.closest("[data-go]"); if (go) { lessonIdx = +go.dataset.go; renderLesson(); window.scrollTo({ top: 0 }); return; }
     if (e.target.closest("[data-path]")) { show("percorso"); return; }
+    var sq = e.target.closest("[data-seq]"); if (sq) { LN.suono.sequenza(JSON.parse(sq.dataset.seq), true); return; }
     var g = e.target.closest("g.n[data-midi]"); if (g) { g.classList.add("revealed"); LN.suono.play(+g.dataset.midi, +g.dataset.dur || 1); }
   });
   $("#lesson").addEventListener("keydown", function (e) {
