@@ -228,6 +228,24 @@
       }).join("") + "</div></section>";
   }
 
+  /* ---------- Cassa del tesoro (vedi progressi.js) ---------- */
+  var CASSA = '<svg class="cassa-ic" viewBox="0 0 48 40" aria-hidden="true"><path d="M4 16h40v20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" fill="#9C5B24"/><path d="M4 16a20 10 0 0 1 40 0z" fill="#B8702F"/>' +
+    '<rect x="4" y="15" width="40" height="5" fill="#F2B705"/><rect x="20" y="14" width="8" height="12" rx="2" fill="#F2B705"/><circle cx="24" cy="21" r="1.8" fill="#5A3412"/>' +
+    '<path d="M10 20v18M38 20v18" stroke="#7A4519" stroke-width="2"/></svg>';
+  function cassaRiga() {
+    var f = S.cassaFatte(), n = S.CASSA_OGNI, pallini = "";
+    for (var i = 0; i < n; i++) pallini += '<i class="' + (i < f ? "on" : "") + '"></i>';
+    return '<div class="cassa-riga">' + CASSA + "<div><b>Cassa del tesoro</b><span>" +
+      (n - f === 1 ? "Si apre alla prossima tappa!" : "Si apre tra " + (n - f) + " tappe") + '</span></div><span class="cassa-pallini" aria-label="' + f + " tappe su " + n + '">' + pallini + "</span></div>";
+  }
+  function cartaCassa(c) {
+    if (!c) return "";
+    var dentro = '<li><b>+' + c.xp + " XP</b>" + (c.raro ? " · tesoro raro!" : "") + (c.molt > 1 ? ' <small>(bonus rimonta ×' + String(c.molt).replace(".", ",") + ": questa settimana ti aiutiamo a recuperare)</small>" : "") + "</li>" +
+      (c.energia ? "<li><b>Energia piena</b></li>" : "") + (c.corona ? "<li><b>Una corona \u{1D110}</b>: salva la serie se salti un giorno</li>" : "");
+    return '<div class="cassa-box" id="cassaBox">' + CASSA + '<div class="cassa-testo"><b>Cassa del tesoro!</b><span>Hai giocato ' + S.CASSA_OGNI + " tappe: aprila e scopri cosa c'è dentro.</span>" +
+      '<ul class="cassa-dentro" hidden>' + dentro + "</ul></div>" + '<button class="btn3d primary" id="apriCassa">Apri</button></div>';
+  }
+
   /* ---------- Missioni del giorno ---------- */
   function testoMissione(x) {
     return {
@@ -250,6 +268,7 @@
           '<span class="miss-bar" aria-hidden="true"><i style="width:' + Math.round(x.fatto / x.n * 100) + '%"></i></span></div>' +
           '<span class="miss-num">' + (x.ok ? "+" + S.MISSIONE_XP + " XP" : x.fatto + "/" + x.n) + "</span></li>";
       }).join("") + "</ul>" +
+      cassaRiga() +
       '<p class="miss-nota">' + (m.premio ? "Tutte completate: energia ricaricata al massimo. Domani arrivano missioni nuove!"
         : "Ogni missione vale " + S.MISSIONE_XP + " XP. Completale tutte e tre e l'energia si ricarica al massimo. Si rinnovano a mezzanotte.") + "</p></section>";
   }
@@ -552,9 +571,14 @@
     var restano = S.daRipassare().length;
     var res = S.registra(s.T.key, s.ok, q, Math.round(s.ms), s.rip);
     var mis = S.aggiornaMissioni({ xp: res.xp, giuste: s.ok, fila: s.filaMax, perfetta: s.ok === q, ripasso: s.rip, track: s.T.track });
+    var cassa = S.avanzaCassa() ? S.apriCassa(LN.classe.indietro()) : null, xpCassa = cassa ? cassa.xp : 0;
     // Gli XP delle missioni vanno nella stessa riga della tappa (il database accetta al massimo 100 XP per riga).
-    var xpRiga = Math.min(100, res.xp + mis.bonus);
-    if (res.xp + mis.bonus > xpRiga) { S.state.xp -= res.xp + mis.bonus - xpRiga; S.salva(); }
+    var xpRiga = Math.min(100, res.xp + mis.bonus + xpCassa);
+    if (res.xp + mis.bonus + xpCassa > xpRiga) {
+      var fuori = res.xp + mis.bonus + xpCassa - xpRiga;
+      S.state.xp -= fuori; S.salva();
+      if (cassa) cassa.xp = Math.max(0, cassa.xp - fuori);
+    }
     LN.account.registraSessione(s.T.key, s.ok, q, s.ms, xpRiga);
     S.aggiornaStat({ fila: s.filaMax, perfetta: s.ok === q, ripasso: s.rip, tutteMissioni: mis.tutte });
     var medNuove = LN.medaglie.controlla();
@@ -605,7 +629,7 @@
       (res.senzaEnergia ? '<p class="energy-line">Energia finita: la tappa vale per stelle e serie, ma non per gli XP. La prossima carica arriva tra ' + minuti(S.energia().prossima) + ".</p>" :
        res.molt > 1 ? '<p class="bonus-line">Bonus continuità XP ×' + String(res.molt).replace(".", ",") + ": +" + (res.xp - res.base) + " XP extra!</p>" : bonusHint(res.serie)) +
       (res.coronaNuova ? '<p class="corona-line"><span class="corona-ic">\u{1D110}</span>' + res.serie + " giorni di fila: hai guadagnato una corona! Se un giorno non riesci ad allenarti, salverà la tua serie.</p>" : "") +
-      medaglieHtml + missioniHtml + brano + review +
+      cartaCassa(cassa) + medaglieHtml + missioniHtml + brano + review +
       '<div class="esito-actions"><button class="btn3d primary" id="goPath">Continua</button>' +
       (s.rip ? (restano ? '<button class="btn-plain" id="retry">Ripassa ancora</button>' : "") : '<button class="btn-plain" id="retry">Rifai la tappa</button>') + "</div></div>";
     var gi = s.gi;
@@ -613,6 +637,10 @@
     show("esito");
     $("#goPath").addEventListener("click", function () { show("percorso"); scrollToCurrent(); });
     if ($("#retry")) $("#retry").addEventListener("click", function () { startSession(gi); });
+    if ($("#apriCassa")) $("#apriCassa").addEventListener("click", function () {
+      $("#cassaBox").classList.add("aperta"); $("#cassaBox .cassa-dentro").hidden = false; this.remove();
+      LN.suono.sequenza([[72, 0.12], [76, 0.12], [79, 0.12], [84, 0.5]], true);
+    });
     if ($("#evMelodia")) $("#evMelodia").addEventListener("click", function () { LN.evento.suonaMelodia(s); });
   }
   $("#esito").addEventListener("click", function (e) { var g = e.target.closest("g.n[data-midi]"); if (g) LN.suono.play(+g.dataset.midi, +g.dataset.dur || 1); });

@@ -37,6 +37,7 @@ window.LN = window.LN || {};
     { id: "alterazioni", nome: "Diesis e bemolle", descr: "Supera l'unità «Toni, semitoni e alterazioni»", segno: "♯♭", n: 1, val: function () { return unitaFatta("Toni, semitoni e alterazioni"); } },
     { id: "classe", nome: "Orchestra unita", descr: "Completa una missione di classe", segno: "\u{1D121}", n: 1, val: function () { return st().missioniClasse || 0; } },
     { id: "brani", nome: "Repertorio classico", descr: "Supera i quattro brani di Beethoven, Mozart e Haydn", segno: "\u{1D122}", n: 4, val: function () { return LN.TAPPE.filter(function (t) { return t.icona === "brano" && S.completata(t.key); }).length; } },
+    { id: "tesori", nome: "Cacciatore di tesori", descr: "Apri 10 casse del tesoro", segno: "\u{1D11F}", n: 10, val: function () { return st().casse || 0; } },
     { id: "mille", nome: "Mille note", descr: "Raggiungi 1000 XP", segno: "\u{1D160}", n: 1000, val: function () { return S.state.xp; } }
   ];
   var COLORI = ["var(--u0)", "var(--u1)", "var(--u2)", "var(--u3)"];

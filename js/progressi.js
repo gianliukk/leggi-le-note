@@ -159,6 +159,29 @@ window.LN = window.LN || {};
       return { nuove: nuove, bonus: bonus, tutte: tutte };
     },
 
+    /* Cassa del tesoro: si apre ogni CASSA_OGNI tappe. Dentro ci sono XP a sorpresa (di più per chi questa settimana
+       è più indietro nella classe) e a volte energia piena o una corona. indietro: 0 = primo della classe, 1 = ultimo, null = non si sa. */
+    CASSA_OGNI: 5,
+    cassaFatte: function () { return S.cassa || 0; },
+    avanzaCassa: function () {
+      S.cassa = (S.cassa || 0) + 1;
+      if (S.cassa < this.CASSA_OGNI) { salva(); return false; }
+      S.cassa = 0; salva(); return true;
+    },
+    apriCassa: function (indietro) {
+      var base = Math.random() < 0.08 ? 40 : [10, 12, 15, 18, 20, 25][Math.floor(Math.random() * 6)];
+      var molt = indietro == null ? 1 : indietro >= 0.67 ? 2 : indietro >= 0.34 ? 1.5 : 1;
+      var c = { xp: Math.round(base * molt), base: base, molt: molt, raro: base === 40, energia: false, corona: false };
+      var r = Math.random();
+      if (r < 0.12 && this.corone() < this.CORONE_MAX) { S.corone = this.corone() + 1; c.corona = true; }
+      else if (r < 0.35 && !this.illimitata) { var e = this._energia(); if (e.valore < this.ENERGIA_MAX) { e.valore = this.ENERGIA_MAX; e.agg = Date.now(); c.energia = true; } }
+      S.xp += c.xp;
+      var st = S.stat = S.stat || {};
+      st.casse = (st.casse || 0) + 1;
+      salva();
+      return c;
+    },
+
     /* Contatori per le medaglie (vedi medaglie.js). r: { fila, perfetta, ripasso, tutteMissioni } */
     aggiornaStat: function (r) {
       var st = S.stat = S.stat || {};

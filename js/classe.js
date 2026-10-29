@@ -294,5 +294,15 @@ window.LN = window.LN || {};
     if (s && $("#classe").contains(s)) { aperto = aperto === s.dataset.storico ? null : s.dataset.storico; render(); }
   });
 
-  LN.classe = { carica: carica, missionePercorso: missionePercorso };
+  /* Posizione nella classe per gli XP della settimana: 0 = primo, 1 = ultimo; null se i dati non ci sono ancora. */
+  function indietro() {
+    var d = cache ? cache.dati : dati;
+    if (A.ruolo !== "studente" || !d || !d.length) return null;
+    var lista = d.filter(function (r) { return r.classe === A.profilo.classe; })
+      .sort(function (a, b) { return b.xp_settimana - a.xp_settimana || a.username.localeCompare(b.username); });
+    var i = lista.findIndex(function (r) { return r.username === A.profilo.username; });
+    return i < 0 || lista.length < 2 ? null : i / (lista.length - 1);
+  }
+
+  LN.classe = { carica: carica, missionePercorso: missionePercorso, indietro: indietro };
 })(window.LN);

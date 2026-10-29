@@ -711,3 +711,22 @@ body.notte .stage .hd { fill: #F2801A; stroke: #FFC56B; stroke-width: 1; }
 .mc-num { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; font-size: 0.92rem; }
 .mc-num b { font-family: var(--display); font-size: 1.1rem; }
 .ev-brano.classico { border-left-color: var(--u2); }
+
+/* ---------- Cassa del tesoro ---------- */
+.cassa-ic { width: 44px; height: auto; flex: none; }
+.cassa-riga { display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
+.cassa-riga > div { display: grid; flex: 1; }
+.cassa-riga span { color: var(--muted); font-size: 0.9rem; }
+.cassa-pallini { display: flex; gap: 5px; }
+.cassa-pallini i { width: 12px; height: 12px; border-radius: 50%; background: var(--soft); border: 2px solid var(--line-strong); }
+.cassa-pallini i.on { background: var(--accent); border-color: var(--accent-shade); }
+.cassa-box { width: 100%; display: flex; align-items: center; gap: 14px; text-align: left; background: var(--surface); border: 2px solid var(--accent); border-radius: 16px; padding: 12px 14px; }
+.cassa-box .cassa-ic { width: 64px; animation: dondola 1.2s ease-in-out infinite; }
+.cassa-box.aperta .cassa-ic { animation: none; transform: scale(1.08); }
+.cassa-testo { display: grid; gap: 4px; flex: 1; }
+.cassa-testo b { font-family: var(--display); font-size: 1.15rem; }
+.cassa-testo span { color: var(--muted); font-size: 0.9rem; }
+.cassa-dentro { list-style: none; padding: 0; display: grid; gap: 2px; }
+.cassa-dentro b { color: var(--accent-shade); }
+@keyframes dondola { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-6deg); } 75% { transform: rotate(6deg); } }
+@media (prefers-reduced-motion: reduce) { .cassa-box .cassa-ic { animation: none; } }
